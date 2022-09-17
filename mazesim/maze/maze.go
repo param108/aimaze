@@ -4,7 +4,12 @@ import (
 	"errors"
 	"math/rand"
 	"fmt"
+	"time"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 type Size struct {
 	Width  int
