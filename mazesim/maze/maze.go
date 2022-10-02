@@ -1,9 +1,11 @@
 package maze
 
 import (
+	"encoding/json"
 	"errors"
-	"math/rand"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
 	"time"
 )
 
@@ -41,6 +43,23 @@ func NewMaze() *Maze {
 		M: make([]string, 2500),
 		DoorsPerWall: 25,
 	}
+}
+
+
+// NewFromFile - Read a maze from a file
+func NewFromFile(filename string) (*Maze, error) {
+	bts, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	m := Maze{}
+	err = json.Unmarshal(bts, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return &m, nil
 }
 
 const WALL = "#"
@@ -91,6 +110,21 @@ func (m *Maze) IsBorder(x, y int) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// Save - Save the maze as json
+func (m *Maze) Save(filename string) error {
+	bts, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(filename, bts, 0777)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // createBorder - creates the border of the maze
