@@ -45,7 +45,6 @@ func NewMaze() *Maze {
 	}
 }
 
-
 // NewFromFile - Read a maze from a file
 func NewFromFile(filename string) (*Maze, error) {
 	bts, err := ioutil.ReadFile(filename)
@@ -127,6 +126,23 @@ func (m *Maze) Save(filename string) error {
 	return nil
 }
 
+// IsCorner - the point in question a corner ?
+func (m *Maze) IsCorner(x,y int) bool {
+	isBorder, err := m.IsBorder(x,y)
+	if err != nil {
+		return false
+	}
+	if isBorder {
+		if (x == 0 && y == 0) ||
+			(x == 0 && y == (m.S.Height - 1)) ||
+			(x == (m.S.Width - 1) && y == 0 ) ||
+			(x == (m.S.Width - 1) && y == (m.S.Height - 1)) {
+			return true
+		}
+	}
+	return false
+}
+
 // createBorder - creates the border of the maze
 // leaves one point empty and populates the exit.
 func (m *Maze) createBorder() {
@@ -137,10 +153,11 @@ func (m *Maze) createBorder() {
 				// if we havent found an exit toss a random
 				// number and if it is divisible by 2 then
 				// lets choose this as the exit.
-				if !exitFound && rand.Intn(10)%2 == 0 {
+				if !exitFound && (rand.Intn(10) == 6) && !m.IsCorner(x,y) {
 					exitFound = true
 					m.E.X = x
 					m.E.Y = y
+					m.Set(x, y, EMPTY)
 				} else {
 					m.Set(x, y, WALL)
 				}

@@ -1,5 +1,4 @@
 # Maze Todos
 
-* TODO Write to file
-* TODO Read from file
-* TODO Dump to CSV
+* DONE Write to file
+* DONE Read from file

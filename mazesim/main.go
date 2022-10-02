@@ -1,34 +1,34 @@
 package main
 
-
 import (
-	"github.com/param108/aimaze/maze"
 	"fmt"
+
+	"github.com/param108/aimaze/sim"
 )
 
 
 func main() {
-	m := maze.NewMaze()
+	s, err := sim.NewSim()
 
-	if err := m.Create(); err != nil {
+	if err != nil {
 		panic(err)
 	}
 
-	m.Print()
+	s.Print()
 
 	fmt.Println("Saved")
 
-	err := m.Save("saveit.json")
+	err = s.Save("saveit.json")
 	if err != nil {
 		panic(err)
 	}
 
-	m,err = maze.NewFromFile("saveit.json")
+	s,err = sim.LoadSim("saveit.json")
 	if err != nil {
 		panic(err)
 	}
 
-	m.Print()
+	s.Print()
 
 
 }
