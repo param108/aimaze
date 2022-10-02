@@ -5,8 +5,9 @@ import (
 	"io/ioutil"
 	"math/rand"
 
-	"github.com/param108/aimaze/maze"
 	"fmt"
+
+	"github.com/param108/aimaze/maze"
 )
 
 type Sim struct {
@@ -37,9 +38,9 @@ func NewSim() (*Sim, error) {
 		return nil, err
 	}
 
-	sim := &Sim {
+	sim := &Sim{
 		M: m,
-		}
+	}
 
 	sim.PlaceHero()
 
@@ -87,7 +88,7 @@ func (s *Sim) Print() {
 				continue
 			}
 
-			s,_ := s.M.Get(x, y)
+			s, _ := s.M.Get(x, y)
 			if len(s) == 0 {
 				fmt.Print(" ")
 			} else {
@@ -96,4 +97,49 @@ func (s *Sim) Print() {
 		}
 		fmt.Println("")
 	}
+}
+
+const (
+	UP    = "up"
+	DOWN  = "down"
+	RIGHT = "right"
+	LEFT  = "left"
+)
+
+// DryMove - Try and Move the Hero and return the new position
+// and if the Move is valid.
+// Return values: X, Y, valid
+func (s *Sim) DryMove(direction string) (int, int, bool) {
+	newX := s.H.X
+	newY := s.H.Y
+
+	valid := func(X, Y int) (int, int, bool) {
+		s, err := s.M.Get(X, Y)
+		if err != nil {
+			return X, Y, false
+		}
+		if s == maze.WALL {
+			return X, Y, false
+		}
+		return X, Y, true
+	}
+
+	switch direction {
+	case UP:
+		newY = newY - 1
+		return valid(newX, newY)
+	case DOWN:
+		newY = newY + 1
+		return valid(newX, newY)
+
+	case RIGHT:
+		newY = newX + 1
+		return valid(newX, newY)
+
+	case LEFT:
+		newY = newX - 1
+		return valid(newX, newY)
+	}
+
+	return newX, newY, false
 }

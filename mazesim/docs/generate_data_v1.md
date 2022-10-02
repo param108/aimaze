@@ -59,4 +59,4 @@ Using a single maze, we will move the hero to various points and calculate the b
 
 We will repeat the above for different randomly generated mazes, so that we don't overfit for one maze.
 
-For each trial we will store the Input vector as a csv row in the file `input.csv` and the corresponding output in `labels.csv`
+For each trial we will store the Input vector as a csv row in the file `inputs.csv` and the corresponding output in `labels.csv`

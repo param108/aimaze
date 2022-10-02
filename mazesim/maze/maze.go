@@ -39,8 +39,8 @@ type Maze struct {
 // You must call Create() to generate the maze
 func NewMaze() *Maze {
 	return &Maze{
-		S: Size{Width: 50, Height: 50},
-		M: make([]string, 2500),
+		S:            Size{Width: 50, Height: 50},
+		M:            make([]string, 2500),
 		DoorsPerWall: 25,
 	}
 }
@@ -127,16 +127,16 @@ func (m *Maze) Save(filename string) error {
 }
 
 // IsCorner - the point in question a corner ?
-func (m *Maze) IsCorner(x,y int) bool {
-	isBorder, err := m.IsBorder(x,y)
+func (m *Maze) IsCorner(x, y int) bool {
+	isBorder, err := m.IsBorder(x, y)
 	if err != nil {
 		return false
 	}
 	if isBorder {
 		if (x == 0 && y == 0) ||
-			(x == 0 && y == (m.S.Height - 1)) ||
-			(x == (m.S.Width - 1) && y == 0 ) ||
-			(x == (m.S.Width - 1) && y == (m.S.Height - 1)) {
+			(x == 0 && y == (m.S.Height-1)) ||
+			(x == (m.S.Width-1) && y == 0) ||
+			(x == (m.S.Width-1) && y == (m.S.Height-1)) {
 			return true
 		}
 	}
@@ -153,7 +153,7 @@ func (m *Maze) createBorder() {
 				// if we havent found an exit toss a random
 				// number and if it is divisible by 2 then
 				// lets choose this as the exit.
-				if !exitFound && (rand.Intn(10) == 6) && !m.IsCorner(x,y) {
+				if !exitFound && (rand.Intn(10) == 6) && !m.IsCorner(x, y) {
 					exitFound = true
 					m.E.X = x
 					m.E.Y = y
@@ -169,16 +169,16 @@ func (m *Maze) createBorder() {
 // createWalls - Basically every alternate column
 // 15 out of 50
 func (m *Maze) createWalls() {
-	for x := 1; x < m.S.Width - 1; x++ {
+	for x := 1; x < m.S.Width-1; x++ {
 		// columns 1,3,5,7 etc were empty
-		if x % 2 != 0 {
+		if x%2 != 0 {
 			continue
 		}
 
 		foundSoFar := 0
 
 		// this is a wall column
-		for y := 1; y < m.S.Height - 1; y++ {
+		for y := 1; y < m.S.Height-1; y++ {
 
 			if rand.Intn(10)%2 == 0 && foundSoFar < m.DoorsPerWall {
 				if y == 1 {
@@ -193,8 +193,8 @@ func (m *Maze) createWalls() {
 					}
 				}
 
-				if y == m.S.Height - 2 {
-					w, _ := m.Get(x, m.S.Height - 1)
+				if y == m.S.Height-2 {
+					w, _ := m.Get(x, m.S.Height-1)
 
 					if w == EMPTY {
 						// if we are in the second last row of a column
@@ -214,7 +214,7 @@ func (m *Maze) createWalls() {
 func (m *Maze) Print() {
 	for y := 0; y < m.S.Height; y++ {
 		for x := 0; x < m.S.Width; x++ {
-			s,_ := m.Get(x, y)
+			s, _ := m.Get(x, y)
 			if len(s) == 0 {
 				fmt.Print(" ")
 			} else {
