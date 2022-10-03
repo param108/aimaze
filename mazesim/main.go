@@ -14,7 +14,7 @@ func main() {
 func generateTrainingData(path string) {
 	rand.Seed(time.Now().UnixNano())
 
-	err := generateTrainingDataV1(path)
+	err := generateTrainingDataV2(path)
 	if err != nil {
 		log.Printf("%+v\n", err)
 	}

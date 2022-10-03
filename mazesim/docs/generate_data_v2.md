@@ -1,4 +1,4 @@
-# Generate Data V1
+# Generate Data V2
 
 # Overview
 
@@ -14,25 +14,25 @@ The direction chosen to move the hero can be one of [up, down, left, right]
 
 The output of the Neural network should be which direction to tell the hero to move.
 
-# V1 data schema
+# V2 data schema
 
-V1 is the brain-dead method. The data is just a single large array.
+V2 adds a few cross features.
 
-The Input length will be size of maze e.g. 50x50 + Position of Exit (x,y) + Position of Hero (x,y)
+DX = (exit x - hero x)
+DY = (exit y - hero y)
 
-= 2500 + 2 + 2
+Instead of the complete maze I generate a new array of size 4 where each entry corresponds to whether a wall was seen in a particular direction or not. The direction of each entry is
+`[ up down left right ]`
+
+The data is still a single large array.
+
+wall array + Position of Exit (x,y) + Position of Hero (x,y) + DX + DY
+
+= 4 + 2 + 2 + 1 + 1 = 10
 
 The output length will be size of action
 
 = 4
-
-## Maze encoding
-
-0 - empty space
-
-1 - wall
-
-The position of Exit and Hero will not be shown
 
 # V1 output schema
 action: array [ [1|0], [1|0], [1|0], [1|0] ]
@@ -63,19 +63,4 @@ For each trial we will store the Input vector as a csv row in the file `inputs.c
 
 # Results
 
-The model failed to train approproately.
-After 20 epochs
-accuracy
-	training         	 (min:    0.461, max:    0.508, cur:    0.508)
-	validation       	 (min:    0.448, max:    0.474, cur:    0.458)
-Loss
-	training         	 (min:    0.407, max:    0.464, cur:    0.407)
-	validation       	 (min:    0.414, max:    0.421, cur:    0.417)
-Mean Squared Error
-	training         	 (min:    0.140, max:    0.148, cur:    0.140)
-	validation       	 (min:    0.142, max:    0.145, cur:    0.143)
-617/617 [==============================] - 22s 36ms/step - loss: 0.4072 - accuracy: 0.5081 - mse: 0.1397 - val_loss: 0.4174 - val_accuracy: 0.4576 - val_mse: 0.1432
-Test loss: 0.41744720935821533
-Test accuracy: 0.4576219916343689
-Model: "sequential"
 

@@ -12,27 +12,54 @@ import (
 	"github.com/pkg/errors"
 )
 
-func getInputV1(s *sim.Sim) []int {
+func getInputV2(s *sim.Sim) []int {
 	input := []int{}
 
-	for _, p := range s.M.M {
-		if p == maze.WALL {
-			input = append(input, 1)
-		} else {
-			input = append(input, 0)
-		}
+	v, err := s.M.Get(s.H.X, s.H.Y - 1)
+	if err != nil || v == maze.WALL {
+		input = append(input, 1)
+	} else {
+		input = append(input, 0)
+	}
+	v, err = s.M.Get(s.H.X, s.H.Y + 1)
+	if err != nil || v == maze.WALL {
+		input = append(input, 1)
+	} else {
+		input = append(input, 0)
 	}
 
-	input = append(input, s.H.X, s.H.Y, s.M.E.X, s.M.E.Y)
+	v, err = s.M.Get(s.H.X - 1, s.H.Y)
+	if err != nil || v == maze.WALL {
+		input = append(input, 1)
+	} else {
+		input = append(input, 0)
+	}
+
+	v, err = s.M.Get(s.H.X + 1, s.H.Y)
+	if err != nil || v == maze.WALL {
+		input = append(input, 1)
+	} else {
+		input = append(input, 0)
+	}
+
+	input = append(
+		input,
+		s.H.X,
+		s.H.Y,
+		s.M.E.X,
+		s.M.E.Y,
+		s.H.X - s.M.E.X, // DX
+		s.H.Y - s.M.E.Y, // DY
+	)
 	return input
 }
 
-func distV1(hX, hY, eX, eY int) float64 {
+func distV2(hX, hY, eX, eY int) float64 {
 	return math.Pow(float64(hX-eX), 2) + math.Pow(float64(hY-eY), 2)
 }
 
-func getOutputV1(s *sim.Sim) ([]int, error) {
-	origDist := distV1(s.H.X, s.H.Y, s.M.E.X, s.M.E.Y)
+func getOutputV2(s *sim.Sim) ([]int, error) {
+	origDist := distV2(s.H.X, s.H.Y, s.M.E.X, s.M.E.Y)
 	minDir := ""
 	for _, dir := range []string{sim.UP, sim.DOWN, sim.RIGHT, sim.LEFT} {
 		x, y, valid := s.DryMove(dir)
@@ -40,7 +67,7 @@ func getOutputV1(s *sim.Sim) ([]int, error) {
 			continue
 		}
 
-		newDist := distV1(x, y, s.M.E.X, s.M.E.Y)
+		newDist := distV2(x, y, s.M.E.X, s.M.E.Y)
 		if newDist < origDist {
 			minDir = dir
 			continue
@@ -72,25 +99,22 @@ func getOutputV1(s *sim.Sim) ([]int, error) {
 	return ret, nil
 }
 
-func writeInputHeaderV1(fp *os.File) error {
+func writeInputHeaderV2(fp *os.File) error {
 	header := ""
-	for i := 0; i < 2500; i++ {
-		header += fmt.Sprintf("x%d,", i+1)
-	}
-	header += "hero_x,hero_y,exit_x,exit_y\n"
+	header += "up_wall,down_wall,left_wall,right_wall,hero_x,hero_y,exit_x,exit_y,dx,dy\n"
 
 	_, err := fp.Write([]byte(header))
 	return errors.Wrap(err, "failed write input header")
 }
 
-func writeOutputHeaderV1(fp *os.File) error {
+func writeOutputHeaderV2(fp *os.File) error {
 	header := "up,down,right,left\n"
 
 	_, err := fp.Write([]byte(header))
 	return err
 }
 
-func writeOutputV1(path string, output []int) error {
+func writeOutputV2(path string, output []int) error {
 	// If the path doesnt exist, add the header
 	outputPath := filepath.Join(path, "labels.csv")
 	fp, err := os.OpenFile(outputPath, os.O_APPEND|os.O_RDWR, 0644)
@@ -100,7 +124,7 @@ func writeOutputV1(path string, output []int) error {
 			return errors.Wrap(err, "failed create label file")
 		}
 
-		if err := writeOutputHeaderV1(fp); err != nil {
+		if err := writeOutputHeaderV2(fp); err != nil {
 			fp.Close()
 			return errors.Wrap(err, "failed write label line")
 		}
@@ -121,7 +145,7 @@ func writeOutputV1(path string, output []int) error {
 	return nil
 }
 
-func writeInputV1(path string, input []int) error {
+func writeInputV2(path string, input []int) error {
 	// If the path doesnt exist, add the header
 	inputPath := filepath.Join(path, "inputs.csv")
 	fp, err := os.OpenFile(inputPath, os.O_APPEND|os.O_RDWR, 0644)
@@ -131,7 +155,7 @@ func writeInputV1(path string, input []int) error {
 			return errors.Wrap(err, "failed create file")
 		}
 
-		if err := writeInputHeaderV1(fp); err != nil {
+		if err := writeInputHeaderV2(fp); err != nil {
 			fp.Close()
 			return errors.Wrap(err, "failed write input header")
 		}
@@ -153,7 +177,7 @@ func writeInputV1(path string, input []int) error {
 	return nil
 }
 
-func generateTrainingDataV1(path string) error {
+func generateTrainingDataV2(path string) error {
 	cnt := 0
 	for j := 0; j < 1000; j++ {
 		s, err := sim.NewSim()
@@ -165,17 +189,17 @@ func generateTrainingDataV1(path string) error {
 			if (cnt + 1) %10 == 0 {
 				fmt.Printf("\r%d/%d", cnt+1, 1000*100)
 			}
-			input := getInputV1(s)
-			output, err := getOutputV1(s)
+			input := getInputV2(s)
+			output, err := getOutputV2(s)
 			if err != nil {
 				s.PlaceHero()
 				cnt++
 				continue
 			}
-			if err := writeInputV1(path, input); err != nil {
+			if err := writeInputV2(path, input); err != nil {
 				return errors.Wrap(err, "writing input v1")
 			}
-			if err := writeOutputV1(path, output); err != nil {
+			if err := writeOutputV2(path, output); err != nil {
 				return errors.Wrap(err, "writing output v1")
 			}
 			s.PlaceHero()
