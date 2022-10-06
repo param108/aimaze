@@ -34,6 +34,8 @@ The output length will be size of action
 
 = 4
 
+all coordinates will be normalized `(x -0)/50`
+
 # V1 output schema
 action: array [ [1|0], [1|0], [1|0], [1|0] ]
     

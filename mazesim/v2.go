@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func getInputV2(s *sim.Sim) []int {
-	input := []int{}
+func getInputV2(s *sim.Sim) []float64 {
+	input := []float64{}
 
 	v, err := s.M.Get(s.H.X, s.H.Y - 1)
 	if err != nil || v == maze.WALL {
@@ -42,14 +42,15 @@ func getInputV2(s *sim.Sim) []int {
 		input = append(input, 0)
 	}
 
+	// Normalizing all coordinates using (x - min)/(max - min)
 	input = append(
 		input,
-		s.H.X,
-		s.H.Y,
-		s.M.E.X,
-		s.M.E.Y,
-		s.H.X - s.M.E.X, // DX
-		s.H.Y - s.M.E.Y, // DY
+		float64(s.H.X)/float64(50),
+		float64(s.H.Y)/float64(50),
+		float64(s.M.E.X)/float64(50),
+		float64(s.M.E.Y)/float64(50),
+		float64(s.H.X - s.M.E.X)/float64(50), // DX
+		float64(s.H.Y - s.M.E.Y)/float64(50), // DY
 	)
 	return input
 }
@@ -145,7 +146,7 @@ func writeOutputV2(path string, output []int) error {
 	return nil
 }
 
-func writeInputV2(path string, input []int) error {
+func writeInputV2(path string, input []float64) error {
 	// If the path doesnt exist, add the header
 	inputPath := filepath.Join(path, "inputs.csv")
 	fp, err := os.OpenFile(inputPath, os.O_APPEND|os.O_RDWR, 0644)
@@ -165,7 +166,7 @@ func writeInputV2(path string, input []int) error {
 
 	dataLine := ""
 	for ix, v := range input {
-		dataLine += fmt.Sprintf("%d", v)
+		dataLine += fmt.Sprintf("%f", v)
 		if ix != len(input)-1 {
 			dataLine += ","
 		}

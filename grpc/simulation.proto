@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+option go_package = "go/maze";
+
+message Simulation {
+        Maze maze = 1;
+        Point hero = 2;
+}
+
+message SimulationAction {
+        Simulation sim = 1;
+        string action = 2;
+}
+
+message Maze {
+        Size size = 1;
+        string maze = 2;
+        Point exit = 3;
+        int32 doors_per_wall = 4;
+}
+
+message Size {
+        int32 width = 1;
+        int32 height = 2;
+}
+
+message Point {
+        int32 x = 1;
+        int32 y = 2;
+}
+
+message CreateSimulationRequest {
+
+}
+
+service Simulator {
+        // CreateSimulation - returns a new Simulation State
+        rpc CreateSimulation(CreateSimulationRequest) returns (Simulation);
+
+        // Simulate - Request an action on a Simulation
+        //            Returns the new Simulation State
+        rpc Simulate(SimulationAction) returns (Simulation);
+}
+
