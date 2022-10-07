@@ -33,6 +33,10 @@ message CreateSimulationRequest {
 
 }
 
+message FeaturesV2 {
+	repeated double feature = 1;
+}
+
 service Simulator {
         // CreateSimulation - returns a new Simulation State
         rpc CreateSimulation(CreateSimulationRequest) returns (Simulation);
@@ -40,5 +44,8 @@ service Simulator {
         // Simulate - Request an action on a Simulation
         //            Returns the new Simulation State
         rpc Simulate(SimulationAction) returns (Simulation);
+
+	// GetFeaturesV2 - Given a simulation return v2 features
+	rpc GetFeaturesV2(Simulation) returns (FeaturesV2); 
 }
 

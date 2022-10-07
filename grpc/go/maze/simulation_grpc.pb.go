@@ -27,6 +27,8 @@ type SimulatorClient interface {
 	// Simulate - Request an action on a Simulation
 	//            Returns the new Simulation State
 	Simulate(ctx context.Context, in *SimulationAction, opts ...grpc.CallOption) (*Simulation, error)
+	// GetFeaturesV2 - Given a simulation return v2 features
+	GetFeaturesV2(ctx context.Context, in *Simulation, opts ...grpc.CallOption) (*FeaturesV2, error)
 }
 
 type simulatorClient struct {
@@ -55,6 +57,15 @@ func (c *simulatorClient) Simulate(ctx context.Context, in *SimulationAction, op
 	return out, nil
 }
 
+func (c *simulatorClient) GetFeaturesV2(ctx context.Context, in *Simulation, opts ...grpc.CallOption) (*FeaturesV2, error) {
+	out := new(FeaturesV2)
+	err := c.cc.Invoke(ctx, "/Simulator/GetFeaturesV2", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SimulatorServer is the server API for Simulator service.
 // All implementations must embed UnimplementedSimulatorServer
 // for forward compatibility
@@ -64,6 +75,8 @@ type SimulatorServer interface {
 	// Simulate - Request an action on a Simulation
 	//            Returns the new Simulation State
 	Simulate(context.Context, *SimulationAction) (*Simulation, error)
+	// GetFeaturesV2 - Given a simulation return v2 features
+	GetFeaturesV2(context.Context, *Simulation) (*FeaturesV2, error)
 	mustEmbedUnimplementedSimulatorServer()
 }
 
@@ -76,6 +89,9 @@ func (UnimplementedSimulatorServer) CreateSimulation(context.Context, *CreateSim
 }
 func (UnimplementedSimulatorServer) Simulate(context.Context, *SimulationAction) (*Simulation, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Simulate not implemented")
+}
+func (UnimplementedSimulatorServer) GetFeaturesV2(context.Context, *Simulation) (*FeaturesV2, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFeaturesV2 not implemented")
 }
 func (UnimplementedSimulatorServer) mustEmbedUnimplementedSimulatorServer() {}
 
@@ -126,6 +142,24 @@ func _Simulator_Simulate_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Simulator_GetFeaturesV2_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Simulation)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SimulatorServer).GetFeaturesV2(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Simulator/GetFeaturesV2",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SimulatorServer).GetFeaturesV2(ctx, req.(*Simulation))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Simulator_ServiceDesc is the grpc.ServiceDesc for Simulator service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -140,6 +174,10 @@ var Simulator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Simulate",
 			Handler:    _Simulator_Simulate_Handler,
+		},
+		{
+			MethodName: "GetFeaturesV2",
+			Handler:    _Simulator_GetFeaturesV2_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
