@@ -1,4 +1,4 @@
-package sim
+package maze
 
 import (
 	"encoding/json"
@@ -7,40 +7,37 @@ import (
 
 	"fmt"
 
-	"github.com/param108/aimaze/maze"
 )
 
-type Sim struct {
-	M *maze.Maze
-	H maze.Point // Hero
-}
 
-func (s *Sim) PlaceHero() {
-	X := rand.Intn(s.M.S.Width)
-	Y := rand.Intn(s.M.S.Height)
+func (s *Simulation) PlaceHero() {
+	X := rand.Int31n(s.Maze.Size.Width)
+	Y := rand.Int31n(s.Maze.Size.Height)
 
-	sym, err := s.M.Get(X, Y)
-	for err != nil || sym == maze.WALL || (X == s.M.E.X && Y == s.M.E.Y) {
-		X = rand.Intn(s.M.S.Width)
-		Y = rand.Intn(s.M.S.Height)
+	sym, err := s.Maze.Get(X, Y)
+	for err != nil || sym == WALL || (X == s.Maze.Exit.X && Y == s.Maze.Exit.Y) {
+		X = rand.Int31n(s.Maze.Size.Width)
+		Y = rand.Int31n(s.Maze.Size.Height)
 
-		sym, err = s.M.Get(X, Y)
+		sym, err = s.Maze.Get(X, Y)
 	}
 
-	s.H.X = X
-	s.H.Y = Y
+	s.Hero.X = X
+	s.Hero.Y = Y
 }
 
 // NewSim - Returns a new Sim with random maze and Hero position
-func NewSim() (*Sim, error) {
-	m := maze.NewMaze()
+func NewSim() (*Simulation, error) {
+	m := NewMaze()
 	if err := m.Create(); err != nil {
 		return nil, err
 	}
 
-	sim := &Sim{
-		M: m,
+	sim := &Simulation{
+		Maze: m,
 	}
+
+	sim.Hero = &Point{}
 
 	sim.PlaceHero()
 
@@ -50,13 +47,13 @@ func NewSim() (*Sim, error) {
 const HERO = "H"
 
 // LoadSim - Loads the Sim from json input
-func LoadSim(filename string) (*Sim, error) {
+func LoadSim(filename string) (*Simulation, error) {
 	bts, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	s := &Sim{}
+	s := &Simulation{}
 	if err := json.Unmarshal(bts, s); err != nil {
 		return nil, err
 	}
@@ -65,7 +62,7 @@ func LoadSim(filename string) (*Sim, error) {
 }
 
 // Save - save the sim board to a file as json
-func (s *Sim) Save(filename string) error {
+func (s *Simulation) Save(filename string) error {
 	bts, err := json.Marshal(s)
 	if err != nil {
 		return err
@@ -75,20 +72,20 @@ func (s *Sim) Save(filename string) error {
 }
 
 // Print - prints the sim board
-func (s *Sim) Print() {
-	for y := 0; y < s.M.S.Height; y++ {
-		for x := 0; x < s.M.S.Width; x++ {
-			if x == s.M.E.X && y == s.M.E.Y {
+func (s *Simulation) Print() {
+	for y := int32(0); y < s.Maze.Size.Height; y++ {
+		for x := int32(0); x < s.Maze.Size.Width; x++ {
+			if x == s.Maze.Exit.X && y == s.Maze.Exit.Y {
 				fmt.Print("E")
 				continue
 			}
 
-			if x == s.H.X && y == s.H.Y {
+			if x == s.Hero.X && y == s.Hero.Y {
 				fmt.Print("H")
 				continue
 			}
 
-			s, _ := s.M.Get(x, y)
+			s, _ := s.Maze.Get(x, y)
 			if len(s) == 0 {
 				fmt.Print(" ")
 			} else {
@@ -109,16 +106,16 @@ const (
 // DryMove - Try and Move the Hero and return the new position
 // and if the Move is valid.
 // Return values: X, Y, valid
-func (s *Sim) DryMove(direction string) (int, int, bool) {
-	newX := s.H.X
-	newY := s.H.Y
+func (s *Simulation) DryMove(direction string) (int32, int32, bool) {
+	newX := s.Hero.X
+	newY := s.Hero.Y
 
-	valid := func(X, Y int) (int, int, bool) {
-		s, err := s.M.Get(X, Y)
+	valid := func(X, Y int32) (int32, int32, bool) {
+		s, err := s.Maze.Get(X, Y)
 		if err != nil {
 			return X, Y, false
 		}
-		if s == maze.WALL {
+		if s == WALL {
 			return X, Y, false
 		}
 		return X, Y, true

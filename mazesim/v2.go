@@ -7,35 +7,34 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/param108/aimaze/maze"
-	"github.com/param108/aimaze/sim"
+	"github.com/param108/aimaze/grpc/go/maze"
 	"github.com/pkg/errors"
 )
 
-func getInputV2(s *sim.Sim) []float64 {
+func getInputV2(s *maze.Simulation) []float64 {
 	input := []float64{}
 
-	v, err := s.M.Get(s.H.X, s.H.Y - 1)
+	v, err := s.Maze.Get(s.Hero.X, s.Hero.Y - 1)
 	if err != nil || v == maze.WALL {
 		input = append(input, 1)
 	} else {
 		input = append(input, 0)
 	}
-	v, err = s.M.Get(s.H.X, s.H.Y + 1)
-	if err != nil || v == maze.WALL {
-		input = append(input, 1)
-	} else {
-		input = append(input, 0)
-	}
-
-	v, err = s.M.Get(s.H.X - 1, s.H.Y)
+	v, err = s.Maze.Get(s.Hero.X, s.Hero.Y + 1)
 	if err != nil || v == maze.WALL {
 		input = append(input, 1)
 	} else {
 		input = append(input, 0)
 	}
 
-	v, err = s.M.Get(s.H.X + 1, s.H.Y)
+	v, err = s.Maze.Get(s.Hero.X - 1, s.Hero.Y)
+	if err != nil || v == maze.WALL {
+		input = append(input, 1)
+	} else {
+		input = append(input, 0)
+	}
+
+	v, err = s.Maze.Get(s.Hero.X + 1, s.Hero.Y)
 	if err != nil || v == maze.WALL {
 		input = append(input, 1)
 	} else {
@@ -45,30 +44,30 @@ func getInputV2(s *sim.Sim) []float64 {
 	// Normalizing all coordinates using (x - min)/(max - min)
 	input = append(
 		input,
-		float64(s.H.X)/float64(50),
-		float64(s.H.Y)/float64(50),
-		float64(s.M.E.X)/float64(50),
-		float64(s.M.E.Y)/float64(50),
-		float64(s.H.X - s.M.E.X)/float64(50), // DX
-		float64(s.H.Y - s.M.E.Y)/float64(50), // DY
+		float64(s.Hero.X)/float64(50),
+		float64(s.Hero.Y)/float64(50),
+		float64(s.Maze.Exit.X)/float64(50),
+		float64(s.Maze.Exit.Y)/float64(50),
+		float64(s.Hero.X - s.Maze.Exit.X)/float64(50), // DX
+		float64(s.Hero.Y - s.Maze.Exit.Y)/float64(50), // DY
 	)
 	return input
 }
 
-func distV2(hX, hY, eX, eY int) float64 {
+func distV2(hX, hY, eX, eY int32) float64 {
 	return math.Pow(float64(hX-eX), 2) + math.Pow(float64(hY-eY), 2)
 }
 
-func getOutputV2(s *sim.Sim) ([]int, error) {
-	origDist := distV2(s.H.X, s.H.Y, s.M.E.X, s.M.E.Y)
+func getOutputV2(s *maze.Simulation) ([]int32, error) {
+	origDist := distV2(s.Hero.X, s.Hero.Y, s.Maze.Exit.X, s.Maze.Exit.Y)
 	minDir := ""
-	for _, dir := range []string{sim.UP, sim.DOWN, sim.RIGHT, sim.LEFT} {
+	for _, dir := range []string{maze.UP, maze.DOWN, maze.RIGHT, maze.LEFT} {
 		x, y, valid := s.DryMove(dir)
 		if !valid {
 			continue
 		}
 
-		newDist := distV2(x, y, s.M.E.X, s.M.E.Y)
+		newDist := distV2(x, y, s.Maze.Exit.X, s.Maze.Exit.Y)
 		if newDist < origDist {
 			minDir = dir
 			continue
@@ -87,9 +86,9 @@ func getOutputV2(s *sim.Sim) ([]int, error) {
 		return nil, errors.New("cant find dir")
 	}
 
-	ret := []int{}
+	ret := []int32{}
 
-	for _, dir := range []string{sim.UP, sim.DOWN, sim.RIGHT, sim.LEFT} {
+	for _, dir := range []string{maze.UP, maze.DOWN, maze.RIGHT, maze.LEFT} {
 		if dir == minDir {
 			ret = append(ret, 1)
 		} else {
@@ -115,7 +114,7 @@ func writeOutputHeaderV2(fp *os.File) error {
 	return err
 }
 
-func writeOutputV2(path string, output []int) error {
+func writeOutputV2(path string, output []int32) error {
 	// If the path doesnt exist, add the header
 	outputPath := filepath.Join(path, "labels.csv")
 	fp, err := os.OpenFile(outputPath, os.O_APPEND|os.O_RDWR, 0644)
@@ -181,7 +180,7 @@ func writeInputV2(path string, input []float64) error {
 func generateTrainingDataV2(path string) error {
 	cnt := 0
 	for j := 0; j < 1000; j++ {
-		s, err := sim.NewSim()
+		s, err := maze.NewSim()
 		if err != nil {
 			return err
 		}
