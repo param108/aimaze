@@ -1,4 +1,4 @@
-package main
+package maze
 
 import (
 	"fmt"
@@ -7,35 +7,76 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/param108/aimaze/grpc/go/maze"
+	"context"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	"net"
 )
 
-func getInputV2(s *maze.Simulation) []float64 {
+type V2Server struct {
+}
+
+// CreateSimulation - returns a new Simulation State
+func (s *V2Server) CreateSimulation(
+	ctx context.Context,
+	req *CreateSimulationRequest,
+) (*Simulation, error) {
+	return NewSim()
+}
+
+// Simulate - Request an action on a Simulation
+//            Returns the new Simulation State
+func (s *V2Server) Simulate(
+	ctx context.Context,
+	req *SimulationAction,
+) (*Simulation, error) {
+	x, y, valid := req.Sim.DryMove(req.Action)
+	if valid {
+		req.Sim.Hero.X = x
+		req.Sim.Hero.Y = y
+	}
+	return req.Sim, nil
+}
+
+// GetFeaturesV2 - Given a simulation return v2 features
+func (s *V2Server) GetFeaturesV2(
+	ctx context.Context,
+	req *Simulation,
+) (*FeaturesV2, error) {
+	ret := &FeaturesV2{}
+	ret.Features = getInputV2(req)
+	return ret, nil
+}
+
+func (s *V2Server) mustEmbedUnimplementedSimulatorServer() {
+
+}
+
+func getInputV2(s *Simulation) []float64 {
 	input := []float64{}
 
-	v, err := s.Maze.Get(s.Hero.X, s.Hero.Y - 1)
-	if err != nil || v == maze.WALL {
+	v, err := s.Maze.Get(s.Hero.X, s.Hero.Y-1)
+	if err != nil || v == WALL {
 		input = append(input, 1)
 	} else {
 		input = append(input, 0)
 	}
-	v, err = s.Maze.Get(s.Hero.X, s.Hero.Y + 1)
-	if err != nil || v == maze.WALL {
-		input = append(input, 1)
-	} else {
-		input = append(input, 0)
-	}
-
-	v, err = s.Maze.Get(s.Hero.X - 1, s.Hero.Y)
-	if err != nil || v == maze.WALL {
+	v, err = s.Maze.Get(s.Hero.X, s.Hero.Y+1)
+	if err != nil || v == WALL {
 		input = append(input, 1)
 	} else {
 		input = append(input, 0)
 	}
 
-	v, err = s.Maze.Get(s.Hero.X + 1, s.Hero.Y)
-	if err != nil || v == maze.WALL {
+	v, err = s.Maze.Get(s.Hero.X-1, s.Hero.Y)
+	if err != nil || v == WALL {
+		input = append(input, 1)
+	} else {
+		input = append(input, 0)
+	}
+
+	v, err = s.Maze.Get(s.Hero.X+1, s.Hero.Y)
+	if err != nil || v == WALL {
 		input = append(input, 1)
 	} else {
 		input = append(input, 0)
@@ -48,8 +89,8 @@ func getInputV2(s *maze.Simulation) []float64 {
 		float64(s.Hero.Y)/float64(50),
 		float64(s.Maze.Exit.X)/float64(50),
 		float64(s.Maze.Exit.Y)/float64(50),
-		float64(s.Hero.X - s.Maze.Exit.X)/float64(50), // DX
-		float64(s.Hero.Y - s.Maze.Exit.Y)/float64(50), // DY
+		float64(s.Hero.X-s.Maze.Exit.X)/float64(50), // DX
+		float64(s.Hero.Y-s.Maze.Exit.Y)/float64(50), // DY
 	)
 	return input
 }
@@ -58,10 +99,10 @@ func distV2(hX, hY, eX, eY int32) float64 {
 	return math.Pow(float64(hX-eX), 2) + math.Pow(float64(hY-eY), 2)
 }
 
-func getOutputV2(s *maze.Simulation) ([]int32, error) {
+func getOutputV2(s *Simulation) ([]int32, error) {
 	origDist := distV2(s.Hero.X, s.Hero.Y, s.Maze.Exit.X, s.Maze.Exit.Y)
 	minDir := ""
-	for _, dir := range []string{maze.UP, maze.DOWN, maze.RIGHT, maze.LEFT} {
+	for _, dir := range []string{UP, DOWN, RIGHT, LEFT} {
 		x, y, valid := s.DryMove(dir)
 		if !valid {
 			continue
@@ -88,7 +129,7 @@ func getOutputV2(s *maze.Simulation) ([]int32, error) {
 
 	ret := []int32{}
 
-	for _, dir := range []string{maze.UP, maze.DOWN, maze.RIGHT, maze.LEFT} {
+	for _, dir := range []string{UP, DOWN, RIGHT, LEFT} {
 		if dir == minDir {
 			ret = append(ret, 1)
 		} else {
@@ -162,7 +203,6 @@ func writeInputV2(path string, input []float64) error {
 	}
 	defer fp.Close()
 
-
 	dataLine := ""
 	for ix, v := range input {
 		dataLine += fmt.Sprintf("%f", v)
@@ -177,16 +217,16 @@ func writeInputV2(path string, input []float64) error {
 	return nil
 }
 
-func generateTrainingDataV2(path string) error {
+func GenerateTrainingDataV2(path string) error {
 	cnt := 0
 	for j := 0; j < 1000; j++ {
-		s, err := maze.NewSim()
+		s, err := NewSim()
 		if err != nil {
 			return err
 		}
 
 		for i := 0; i < 100; i++ {
-			if (cnt + 1) %10 == 0 {
+			if (cnt+1)%10 == 0 {
 				fmt.Printf("\r%d/%d", cnt+1, 1000*100)
 			}
 			input := getInputV2(s)
@@ -206,5 +246,20 @@ func generateTrainingDataV2(path string) error {
 			cnt++
 		}
 	}
+	return nil
+}
+
+// startV2Server - starts the grpc server and never returns
+func StartV2Server(port int) error {
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		return errors.Wrap(err, "failed to listen")
+	}
+
+	server := &V2Server{}
+	var opts []grpc.ServerOption
+	grpcServer := grpc.NewServer(opts...)
+	RegisterSimulatorServer(grpcServer, server)
+	grpcServer.Serve(lis)
 	return nil
 }

@@ -3,6 +3,7 @@ module github.com/param108/aimaze/grpc/go/maze
 go 1.17
 
 require (
+	github.com/pkg/errors v0.9.1
 	google.golang.org/grpc v1.50.0
 	google.golang.org/protobuf v1.28.1
 )
