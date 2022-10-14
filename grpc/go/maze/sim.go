@@ -121,6 +121,8 @@ func (s *Simulation) DryMove(direction string) (int32, int32, bool) {
 		return X, Y, true
 	}
 
+	fmt.Println(direction)
+
 	switch direction {
 	case UP:
 		newY = newY - 1
@@ -130,11 +132,11 @@ func (s *Simulation) DryMove(direction string) (int32, int32, bool) {
 		return valid(newX, newY)
 
 	case RIGHT:
-		newY = newX + 1
+		newX = newX + 1
 		return valid(newX, newY)
 
 	case LEFT:
-		newY = newX - 1
+		newX = newX - 1
 		return valid(newX, newY)
 	}
 

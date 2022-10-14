@@ -1,8 +1,10 @@
 from simulation_pb2_grpc import SimulatorStub
-from simulation_pb2 import CreateSimulationRequest
-
+from simulation_pb2 import CreateSimulationRequest, SimulationAction
+from models import simulate_ai,get_action
 import grpc
 import os
+import numpy
+import time
 
 def printSim(sim):
     os.system('clear')
@@ -27,4 +29,18 @@ stub = SimulatorStub(channel)
 
 sim = stub.CreateSimulation(CreateSimulationRequest())
 
-printSim(sim)
+try_num = 1
+
+while True:
+    features = stub.GetFeaturesV2(sim)
+
+    actionArr = simulate_ai(features.features)[0]
+    next_action = get_action(sim, actionArr)
+    print(actionArr, next_action.action)
+    time.sleep(2)
+
+    printSim(sim)
+    print("moved:", next_action.action,"try:",try_num)
+
+    sim = stub.Simulate(next_action)
+    try_num+=1

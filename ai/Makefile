@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 setup:
 	source env/bin/activate; \
-		pip3 install -r /path/to/requirements.txt
+		pip3 install -r requirements.txt
 
 run:
 	PYTHONPATH="python/maze" python3 simulate.py
