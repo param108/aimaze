@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10simulation.proto\"7\n\nSimulation\x12\x13\n\x04maze\x18\x01 \x01(\x0b\x32\x05.Maze\x12\x14\n\x04hero\x18\x02 \x01(\x0b\x32\x06.Point\"<\n\x10SimulationAction\x12\x18\n\x03sim\x18\x01 \x01(\x0b\x32\x0b.Simulation\x12\x0e\n\x06\x61\x63tion\x18\x02 \x01(\t\"W\n\x04Maze\x12\x13\n\x04size\x18\x01 \x01(\x0b\x32\x05.Size\x12\x0c\n\x04maze\x18\x02 \x01(\t\x12\x14\n\x04\x65xit\x18\x03 \x01(\x0b\x32\x06.Point\x12\x16\n\x0e\x64oors_per_wall\x18\x04 \x01(\x05\"%\n\x04Size\x12\r\n\x05width\x18\x01 \x01(\x05\x12\x0e\n\x06height\x18\x02 \x01(\x05\"\x1d\n\x05Point\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\"\x19\n\x17\x43reateSimulationRequest\"\x1d\n\nFeaturesV2\x12\x0f\n\x07\x66\x65\x61ture\x18\x01 \x03(\x01\x32\x9d\x01\n\tSimulator\x12\x39\n\x10\x43reateSimulation\x12\x18.CreateSimulationRequest\x1a\x0b.Simulation\x12*\n\x08Simulate\x12\x11.SimulationAction\x1a\x0b.Simulation\x12)\n\rGetFeaturesV2\x12\x0b.Simulation\x1a\x0b.FeaturesV2B\tZ\x07go/mazeb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10simulation.proto\"7\n\nSimulation\x12\x13\n\x04maze\x18\x01 \x01(\x0b\x32\x05.Maze\x12\x14\n\x04hero\x18\x02 \x01(\x0b\x32\x06.Point\"<\n\x10SimulationAction\x12\x18\n\x03sim\x18\x01 \x01(\x0b\x32\x0b.Simulation\x12\x0e\n\x06\x61\x63tion\x18\x02 \x01(\t\"W\n\x04Maze\x12\x13\n\x04size\x18\x01 \x01(\x0b\x32\x05.Size\x12\x0c\n\x04maze\x18\x02 \x01(\t\x12\x14\n\x04\x65xit\x18\x03 \x01(\x0b\x32\x06.Point\x12\x16\n\x0e\x64oors_per_wall\x18\x04 \x01(\x05\"%\n\x04Size\x12\r\n\x05width\x18\x01 \x01(\x05\x12\x0e\n\x06height\x18\x02 \x01(\x05\"\x1d\n\x05Point\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\"\x19\n\x17\x43reateSimulationRequest\"\x1e\n\nFeaturesV2\x12\x10\n\x08\x66\x65\x61tures\x18\x01 \x03(\x01\x32\x9d\x01\n\tSimulator\x12\x39\n\x10\x43reateSimulation\x12\x18.CreateSimulationRequest\x1a\x0b.Simulation\x12*\n\x08Simulate\x12\x11.SimulationAction\x1a\x0b.Simulation\x12)\n\rGetFeaturesV2\x12\x0b.Simulation\x1a\x0b.FeaturesV2B\tZ\x07go/mazeb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'simulation_pb2', globals())
@@ -34,7 +34,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _CREATESIMULATIONREQUEST._serialized_start=298
   _CREATESIMULATIONREQUEST._serialized_end=323
   _FEATURESV2._serialized_start=325
-  _FEATURESV2._serialized_end=354
-  _SIMULATOR._serialized_start=357
-  _SIMULATOR._serialized_end=514
+  _FEATURESV2._serialized_end=355
+  _SIMULATOR._serialized_start=358
+  _SIMULATOR._serialized_end=515
 # @@protoc_insertion_point(module_scope)
