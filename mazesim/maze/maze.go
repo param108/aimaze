@@ -138,19 +138,33 @@ func IsCorner(m *maze.Maze, x, y int32) bool {
 // createBorder - creates the border of the maze
 // leaves one point empty and populates the exit.
 func createBorder(m *maze.Maze) {
+	exitIdx := rand.Intn(int(m.Size.Height*2 + m.Size.Width*2) - 4)
+	for (exitIdx == 0 || // first corner
+		exitIdx == int(m.Size.Width - 1) || // second corner
+		exitIdx == int(m.Size.Width + 2*m.Size.Height) - 2 - 1 || // third corner
+		exitIdx == int(m.Size.Height*2 + m.Size.Width*2) - 4 - 1) {
+		exitIdx = rand.Intn(int(m.Size.Height*2 + m.Size.Width*2) - 4)
+	}
+
 	exitFound := false
 	for y := int32(0); y < m.Size.Height; y++ {
 		for x := int32(0); x < m.Size.Width; x++ {
 			if isBorder, _ := IsBorder(m, x, y); isBorder {
-				// if we havent found an exit toss a random
-				// number and if it is divisible by 2 then
-				// lets choose this as the exit.
-				if !exitFound && (rand.Intn(10) == 6) && !IsCorner(m, x, y) {
-					exitFound = true
-					m.Exit.X = x
-					m.Exit.Y = y
-					Set(m, x, y, EMPTY)
-				} else {
+				exitPlaced := false
+				// Place the exit at the exitIdx'th point on the border
+				if !exitFound {
+					if exitIdx == 0 {
+						exitPlaced = true
+						exitFound = true
+						m.Exit.X = x
+						m.Exit.Y = y
+						Set(m, x, y, EMPTY)
+					} else {
+						exitIdx --
+					}
+				}
+
+				if !exitPlaced {
 					Set(m, x, y, WALL)
 				}
 			}
@@ -173,12 +187,49 @@ func createWalls(m *maze.Maze) {
 		for y := int32(1); y < m.Size.Height-1; y++ {
 
 			if rand.Intn(10)%2 == 0 && foundSoFar < m.DoorsPerWall {
+
+				if x == 1 {
+					w, _ := Get(m, 0, y)
+
+					if w == EMPTY {
+						// if we are in the second column
+						// and the first column is the exit then
+						// we cannot place a wall there otherwize
+						// we will block the exit.
+						continue
+					}
+				}
+
+				if x == m.Size.Width-2 {
+					w, _ := Get(m, x+1, y)
+
+					if w == EMPTY {
+						// if we are in the second last column
+						// and the last column is the exit then
+						// we cannot place a wall there otherwize
+						// we will block the exit.
+						continue
+					}
+				}
+
+				if y == m.Size.Height-2 {
+					w, _ := Get(m, x, m.Size.Height-1)
+
+					if w == EMPTY {
+						// if we are in the second last row of a column
+						// and the last column is the exit then
+						// we cannot place a wall there otherwize
+						// we will block the exit.
+						continue
+					}
+				}
+
 				if y == 1 {
 					w, _ := Get(m, x, 0)
 
 					if w == EMPTY {
 						// if we are in the second row of a column
-						// and the first column is the exit then
+						// and the first row is the exit then
 						// we cannot place a wall there otherwize
 						// we will block the exit.
 						continue
