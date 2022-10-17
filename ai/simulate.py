@@ -40,7 +40,6 @@ while (not (sim.maze.exit.y == sim.hero.y and sim.maze.exit.x == sim.hero.x)) an
     actionArr = simulate_ai(features.features)[0]
     next_action = get_action(sim, actionArr)
     print(actionArr, next_action.action)
-    time.sleep(2)
 
     printSim(sim)
     print("moved:", next_action.action,"try:",try_num)
