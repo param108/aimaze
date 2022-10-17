@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "go/maze";
+option go_package = "spec/grpc/maze";
 
 message Simulation {
         Maze maze = 1;

@@ -7,19 +7,20 @@ import (
 
 	"fmt"
 
+	"github.com/param108/aimaze/mazesim/spec/grpc/maze"
 )
 
 
-func (s *Simulation) PlaceHero() {
+func PlaceHero(s * maze.Simulation) {
 	X := rand.Int31n(s.Maze.Size.Width)
 	Y := rand.Int31n(s.Maze.Size.Height)
 
-	sym, err := s.Maze.Get(X, Y)
+	sym, err := Get(s.Maze, X, Y)
 	for err != nil || sym == WALL || (X == s.Maze.Exit.X && Y == s.Maze.Exit.Y) {
 		X = rand.Int31n(s.Maze.Size.Width)
 		Y = rand.Int31n(s.Maze.Size.Height)
 
-		sym, err = s.Maze.Get(X, Y)
+		sym, err = Get(s.Maze, X, Y)
 	}
 
 	s.Hero.X = X
@@ -27,19 +28,19 @@ func (s *Simulation) PlaceHero() {
 }
 
 // NewSim - Returns a new Sim with random maze and Hero position
-func NewSim() (*Simulation, error) {
+func NewSim() (*maze.Simulation, error) {
 	m := NewMaze()
-	if err := m.Create(); err != nil {
+	if err := Create(m); err != nil {
 		return nil, err
 	}
 
-	sim := &Simulation{
+	sim := &maze.Simulation{
 		Maze: m,
 	}
 
-	sim.Hero = &Point{}
+	sim.Hero = &maze.Point{}
 
-	sim.PlaceHero()
+	PlaceHero(sim)
 
 	return sim, nil
 }
@@ -47,13 +48,13 @@ func NewSim() (*Simulation, error) {
 const HERO = "H"
 
 // LoadSim - Loads the Sim from json input
-func LoadSim(filename string) (*Simulation, error) {
+func LoadSim(filename string) (*maze.Simulation, error) {
 	bts, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	s := &Simulation{}
+	s := &maze.Simulation{}
 	if err := json.Unmarshal(bts, s); err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func LoadSim(filename string) (*Simulation, error) {
 }
 
 // Save - save the sim board to a file as json
-func (s *Simulation) Save(filename string) error {
+func SaveSim(s *maze.Simulation, filename string) error {
 	bts, err := json.Marshal(s)
 	if err != nil {
 		return err
@@ -72,7 +73,7 @@ func (s *Simulation) Save(filename string) error {
 }
 
 // Print - prints the sim board
-func (s *Simulation) Print() {
+func PrintSim(s *maze.Simulation) {
 	for y := int32(0); y < s.Maze.Size.Height; y++ {
 		for x := int32(0); x < s.Maze.Size.Width; x++ {
 			if x == s.Maze.Exit.X && y == s.Maze.Exit.Y {
@@ -85,7 +86,7 @@ func (s *Simulation) Print() {
 				continue
 			}
 
-			s, _ := s.Maze.Get(x, y)
+			s, _ := Get(s.Maze, x, y)
 			if len(s) == 0 {
 				fmt.Print(" ")
 			} else {
@@ -106,12 +107,12 @@ const (
 // DryMove - Try and Move the Hero and return the new position
 // and if the Move is valid.
 // Return values: X, Y, valid
-func (s *Simulation) DryMove(direction string) (int32, int32, bool) {
+func DryMove(s *maze.Simulation, direction string) (int32, int32, bool) {
 	newX := s.Hero.X
 	newY := s.Hero.Y
 
 	valid := func(X, Y int32) (int32, int32, bool) {
-		s, err := s.Maze.Get(X, Y)
+		s, err := Get(s.Maze, X, Y)
 		if err != nil {
 			return X, Y, false
 		}

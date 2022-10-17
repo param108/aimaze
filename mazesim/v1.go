@@ -1,5 +1,6 @@
 package main
-
+/*
+  DEPRECATED FILE
 import (
 	"fmt"
 	"math"
@@ -7,7 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/param108/aimaze/grpc/go/maze"
+	mazemgr "github.com/param108/aimaze/mazesim/maze"
+
+	"github.com/param108/aimaze/mazesim/spec/grpc/maze"
 	"github.com/pkg/errors"
 )
 
@@ -155,7 +158,7 @@ func writeInputV1(path string, input []int32) error {
 func generateTrainingDataV1(path string) error {
 	cnt := 0
 	for j := 0; j < 1000; j++ {
-		s, err := maze.NewSim()
+		s, err := mazemgr.NewSim()
 		if err != nil {
 			return err
 		}
@@ -183,3 +186,4 @@ func generateTrainingDataV1(path string) error {
 	}
 	return nil
 }
+*/

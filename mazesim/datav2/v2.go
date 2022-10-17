@@ -1,4 +1,4 @@
-package maze
+package datav2
 
 import (
 	"fmt"
@@ -8,29 +8,30 @@ import (
 	"path/filepath"
 
 	"context"
+
+	mazemgr "github.com/param108/aimaze/mazesim/maze"
+	"github.com/param108/aimaze/mazesim/spec/grpc/maze"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"net"
 )
 
-type V2Server struct {
+type Server struct {
 }
 
 // CreateSimulation - returns a new Simulation State
-func (s *V2Server) CreateSimulation(
+func (s *Server) CreateSimulation(
 	ctx context.Context,
-	req *CreateSimulationRequest,
-) (*Simulation, error) {
-	return NewSim()
+	req *maze.CreateSimulationRequest,
+) (*maze.Simulation, error) {
+	return mazemgr.NewSim()
 }
 
 // Simulate - Request an action on a Simulation
 //            Returns the new Simulation State
-func (s *V2Server) Simulate(
+func (s *Server) Simulate(
 	ctx context.Context,
-	req *SimulationAction,
-) (*Simulation, error) {
-	x, y, valid := req.Sim.DryMove(req.Action)
+	req *maze.SimulationAction,
+) (*maze.Simulation, error) {
+	x, y, valid := mazemgr.DryMove(req.Sim, req.Action)
 	if valid {
 		req.Sim.Hero.X = x
 		req.Sim.Hero.Y = y
@@ -39,44 +40,40 @@ func (s *V2Server) Simulate(
 }
 
 // GetFeaturesV2 - Given a simulation return v2 features
-func (s *V2Server) GetFeaturesV2(
+func (s *Server) GetFeaturesV2(
 	ctx context.Context,
-	req *Simulation,
-) (*FeaturesV2, error) {
-	ret := &FeaturesV2{}
+	req *maze.Simulation,
+) (*maze.FeaturesV2, error) {
+	ret := &maze.FeaturesV2{}
 	ret.Features = getInputV2(req)
 	return ret, nil
 }
 
-func (s *V2Server) mustEmbedUnimplementedSimulatorServer() {
-
-}
-
-func getInputV2(s *Simulation) []float64 {
+func getInputV2(s *maze.Simulation) []float64 {
 	input := []float64{}
 
-	v, err := s.Maze.Get(s.Hero.X, s.Hero.Y-1)
-	if err != nil || v == WALL {
+	v, err := mazemgr.Get(s.Maze, s.Hero.X, s.Hero.Y-1)
+	if err != nil || v == mazemgr.WALL {
 		input = append(input, 1)
 	} else {
 		input = append(input, 0)
 	}
-	v, err = s.Maze.Get(s.Hero.X, s.Hero.Y+1)
-	if err != nil || v == WALL {
-		input = append(input, 1)
-	} else {
-		input = append(input, 0)
-	}
-
-	v, err = s.Maze.Get(s.Hero.X-1, s.Hero.Y)
-	if err != nil || v == WALL {
+	v, err = mazemgr.Get(s.Maze, s.Hero.X, s.Hero.Y+1)
+	if err != nil || v == mazemgr.WALL {
 		input = append(input, 1)
 	} else {
 		input = append(input, 0)
 	}
 
-	v, err = s.Maze.Get(s.Hero.X+1, s.Hero.Y)
-	if err != nil || v == WALL {
+	v, err = mazemgr.Get(s.Maze, s.Hero.X-1, s.Hero.Y)
+	if err != nil || v == mazemgr.WALL {
+		input = append(input, 1)
+	} else {
+		input = append(input, 0)
+	}
+
+	v, err = mazemgr.Get(s.Maze, s.Hero.X+1, s.Hero.Y)
+	if err != nil || v == mazemgr.WALL {
 		input = append(input, 1)
 	} else {
 		input = append(input, 0)
@@ -99,11 +96,11 @@ func distV2(hX, hY, eX, eY int32) float64 {
 	return math.Pow(float64(hX-eX), 2) + math.Pow(float64(hY-eY), 2)
 }
 
-func getOutputV2(s *Simulation) ([]int32, error) {
+func getOutputV2(s *maze.Simulation) ([]int32, error) {
 	origDist := distV2(s.Hero.X, s.Hero.Y, s.Maze.Exit.X, s.Maze.Exit.Y)
 	minDir := ""
-	for _, dir := range []string{UP, DOWN, RIGHT, LEFT} {
-		x, y, valid := s.DryMove(dir)
+	for _, dir := range []string{mazemgr.UP, mazemgr.DOWN, mazemgr.RIGHT, mazemgr.LEFT} {
+		x, y, valid := mazemgr.DryMove(s,dir)
 		if !valid {
 			continue
 		}
@@ -129,7 +126,7 @@ func getOutputV2(s *Simulation) ([]int32, error) {
 
 	ret := []int32{}
 
-	for _, dir := range []string{UP, DOWN, RIGHT, LEFT} {
+	for _, dir := range []string{mazemgr.UP, mazemgr.DOWN, mazemgr.RIGHT, mazemgr.LEFT} {
 		if dir == minDir {
 			ret = append(ret, 1)
 		} else {
@@ -220,7 +217,7 @@ func writeInputV2(path string, input []float64) error {
 func GenerateTrainingDataV2(path string) error {
 	cnt := 0
 	for j := 0; j < 1000; j++ {
-		s, err := NewSim()
+		s, err := mazemgr.NewSim()
 		if err != nil {
 			return err
 		}
@@ -232,7 +229,7 @@ func GenerateTrainingDataV2(path string) error {
 			input := getInputV2(s)
 			output, err := getOutputV2(s)
 			if err != nil {
-				s.PlaceHero()
+				mazemgr.PlaceHero(s)
 				cnt++
 				continue
 			}
@@ -242,24 +239,9 @@ func GenerateTrainingDataV2(path string) error {
 			if err := writeOutputV2(path, output); err != nil {
 				return errors.Wrap(err, "writing output v1")
 			}
-			s.PlaceHero()
+			mazemgr.PlaceHero(s)
 			cnt++
 		}
 	}
-	return nil
-}
-
-// startV2Server - starts the grpc server and never returns
-func StartV2Server(port int) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
-	if err != nil {
-		return errors.Wrap(err, "failed to listen")
-	}
-
-	server := &V2Server{}
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	RegisterSimulatorServer(grpcServer, server)
-	grpcServer.Serve(lis)
 	return nil
 }
