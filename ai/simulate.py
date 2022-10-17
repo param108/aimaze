@@ -6,6 +6,9 @@ import os
 import numpy
 import time
 
+# Maximum tries allowed per maze
+max_tries = 150
+
 def printSim(sim):
     os.system('clear')
     x = 0
@@ -31,7 +34,7 @@ sim = stub.CreateSimulation(CreateSimulationRequest())
 
 try_num = 1
 
-while True:
+while (not (sim.maze.exit.y == sim.hero.y and sim.maze.exit.x == sim.hero.x)) and try_num < max_tries :
     features = stub.GetFeaturesV2(sim)
 
     actionArr = simulate_ai(features.features)[0]
@@ -44,3 +47,8 @@ while True:
 
     sim = stub.Simulate(next_action)
     try_num+=1
+
+if try_num == 150:
+    print ("failed, ran out of tries:", try_num)
+else:
+    print("success made it in:", try_num, "/", max_tries)
