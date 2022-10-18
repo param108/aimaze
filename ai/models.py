@@ -10,11 +10,11 @@ from simulation_pb2 import SimulationAction
 
 from keras import backend as K
 
-model_path='/home/param/repos/aimazedata/testv2_3/model.tf'
+model_path='/home/param/repos/aimazedata/testv3_1/model.tf'
 # simulate_ai - simple array features
 def simulate_ai(features):
     numpyf = np.array(features)
-    numpyf.shape=(1,10)
+    numpyf.shape=(1,2504)
     in_data = tf.convert_to_tensor(numpyf, dtype=tf.float32)
     model = models.load_model(model_path)
     preds = model.predict(in_data)

@@ -127,6 +127,8 @@ func recursion(x, y int32, m *maze.Maze, outputPath string, depth int) bool {
 
 	// if you start from some other starting point
 	// this node is still valid
+	// BUT this explodes the complexity so ignoring for now
+	// If the training doesnt work, we will uncomment this
 	defer func() {
 		foundRecursion[thisKey] = false
 	}()
@@ -145,12 +147,17 @@ func recursion(x, y int32, m *maze.Maze, outputPath string, depth int) bool {
 		return true
 	}
 
-	for _, direction := range []string{
+	// Randomize the array of directions as otherwise we bias the
+	// neural net to always go up more frequently
+	a := []string{
 		mazemgr.UP,
 		mazemgr.DOWN,
 		mazemgr.RIGHT,
 		mazemgr.LEFT,
-	} {
+	}
+
+	rand.Shuffle(len(a), func(i, j int) { a[i], a[j] = a[j], a[i] })
+	for _, direction := range a {
 
 		switch direction {
 		case mazemgr.UP:
