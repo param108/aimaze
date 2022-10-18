@@ -112,7 +112,7 @@ func getOutputV2(s *maze.Simulation) ([]int32, error) {
 		}
 		if newDist == origDist {
 			// If both are equal choose one randomly
-			if minDir == "" || rand.Intn(2) == 1 {
+			if minDir == "" && rand.Intn(2) == 1 {
 				minDir = dir
 			}
 		}

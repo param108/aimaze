@@ -122,8 +122,6 @@ func DryMove(s *maze.Simulation, direction string) (int32, int32, bool) {
 		return X, Y, true
 	}
 
-	fmt.Println(direction)
-
 	switch direction {
 	case UP:
 		newY = newY - 1

@@ -10,7 +10,7 @@ from simulation_pb2 import SimulationAction
 
 from keras import backend as K
 
-model_path='/home/param/repos/aimazedata/testv2_2/model.tf'
+model_path='/home/param/repos/aimazedata/testv2_3/model.tf'
 # simulate_ai - simple array features
 def simulate_ai(features):
     numpyf = np.array(features)
