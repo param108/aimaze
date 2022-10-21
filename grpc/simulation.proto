@@ -5,6 +5,9 @@ option go_package = "spec/grpc/maze";
 message Simulation {
         Maze maze = 1;
         Point hero = 2;
+	// prev - the previous point where the hero stood
+        // initially it is set to the starting point of the hero
+        Point prev = 3;
 }
 
 message SimulationAction {

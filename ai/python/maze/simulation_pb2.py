@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10simulation.proto\"7\n\nSimulation\x12\x13\n\x04maze\x18\x01 \x01(\x0b\x32\x05.Maze\x12\x14\n\x04hero\x18\x02 \x01(\x0b\x32\x06.Point\"<\n\x10SimulationAction\x12\x18\n\x03sim\x18\x01 \x01(\x0b\x32\x0b.Simulation\x12\x0e\n\x06\x61\x63tion\x18\x02 \x01(\t\"W\n\x04Maze\x12\x13\n\x04size\x18\x01 \x01(\x0b\x32\x05.Size\x12\x0c\n\x04maze\x18\x02 \x01(\t\x12\x14\n\x04\x65xit\x18\x03 \x01(\x0b\x32\x06.Point\x12\x16\n\x0e\x64oors_per_wall\x18\x04 \x01(\x05\"%\n\x04Size\x12\r\n\x05width\x18\x01 \x01(\x05\x12\x0e\n\x06height\x18\x02 \x01(\x05\"\x1d\n\x05Point\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\"\x19\n\x17\x43reateSimulationRequest\"\x1e\n\nFeaturesV2\x12\x10\n\x08\x66\x65\x61tures\x18\x01 \x03(\x01\x32\x9d\x01\n\tSimulator\x12\x39\n\x10\x43reateSimulation\x12\x18.CreateSimulationRequest\x1a\x0b.Simulation\x12*\n\x08Simulate\x12\x11.SimulationAction\x1a\x0b.Simulation\x12)\n\rGetFeaturesV2\x12\x0b.Simulation\x1a\x0b.FeaturesV2B\tZ\x07go/mazeb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10simulation.proto\"M\n\nSimulation\x12\x13\n\x04maze\x18\x01 \x01(\x0b\x32\x05.Maze\x12\x14\n\x04hero\x18\x02 \x01(\x0b\x32\x06.Point\x12\x14\n\x04prev\x18\x03 \x01(\x0b\x32\x06.Point\"<\n\x10SimulationAction\x12\x18\n\x03sim\x18\x01 \x01(\x0b\x32\x0b.Simulation\x12\x0e\n\x06\x61\x63tion\x18\x02 \x01(\t\"W\n\x04Maze\x12\x13\n\x04size\x18\x01 \x01(\x0b\x32\x05.Size\x12\x0c\n\x04maze\x18\x02 \x01(\t\x12\x14\n\x04\x65xit\x18\x03 \x01(\x0b\x32\x06.Point\x12\x16\n\x0e\x64oors_per_wall\x18\x04 \x01(\x05\"%\n\x04Size\x12\r\n\x05width\x18\x01 \x01(\x05\x12\x0e\n\x06height\x18\x02 \x01(\x05\"\x1d\n\x05Point\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\"\x19\n\x17\x43reateSimulationRequest\"\x1e\n\nFeaturesV2\x12\x10\n\x08\x66\x65\x61tures\x18\x01 \x03(\x01\x32\x9d\x01\n\tSimulator\x12\x39\n\x10\x43reateSimulation\x12\x18.CreateSimulationRequest\x1a\x0b.Simulation\x12*\n\x08Simulate\x12\x11.SimulationAction\x1a\x0b.Simulation\x12)\n\rGetFeaturesV2\x12\x0b.Simulation\x1a\x0b.FeaturesV2B\x10Z\x0espec/grpc/mazeb\x06proto3')
 
 
 
@@ -78,21 +78,21 @@ _SIMULATOR = DESCRIPTOR.services_by_name['Simulator']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z\007go/maze'
+  DESCRIPTOR._serialized_options = b'Z\016spec/grpc/maze'
   _SIMULATION._serialized_start=20
-  _SIMULATION._serialized_end=75
-  _SIMULATIONACTION._serialized_start=77
-  _SIMULATIONACTION._serialized_end=137
-  _MAZE._serialized_start=139
-  _MAZE._serialized_end=226
-  _SIZE._serialized_start=228
-  _SIZE._serialized_end=265
-  _POINT._serialized_start=267
-  _POINT._serialized_end=296
-  _CREATESIMULATIONREQUEST._serialized_start=298
-  _CREATESIMULATIONREQUEST._serialized_end=323
-  _FEATURESV2._serialized_start=325
-  _FEATURESV2._serialized_end=355
-  _SIMULATOR._serialized_start=358
-  _SIMULATOR._serialized_end=515
+  _SIMULATION._serialized_end=97
+  _SIMULATIONACTION._serialized_start=99
+  _SIMULATIONACTION._serialized_end=159
+  _MAZE._serialized_start=161
+  _MAZE._serialized_end=248
+  _SIZE._serialized_start=250
+  _SIZE._serialized_end=287
+  _POINT._serialized_start=289
+  _POINT._serialized_end=318
+  _CREATESIMULATIONREQUEST._serialized_start=320
+  _CREATESIMULATIONREQUEST._serialized_end=345
+  _FEATURESV2._serialized_start=347
+  _FEATURESV2._serialized_end=377
+  _SIMULATOR._serialized_start=380
+  _SIMULATOR._serialized_end=537
 # @@protoc_insertion_point(module_scope)

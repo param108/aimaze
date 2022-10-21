@@ -26,13 +26,16 @@ func (s *Server) CreateSimulation(
 }
 
 // Simulate - Request an action on a Simulation
-//            Returns the new Simulation State
+//
+//	Returns the new Simulation State
 func (s *Server) Simulate(
 	ctx context.Context,
 	req *maze.SimulationAction,
 ) (*maze.Simulation, error) {
 	x, y, valid := mazemgr.DryMove(req.Sim, req.Action)
 	if valid {
+		req.Sim.Prev.X = req.Sim.Hero.X
+		req.Sim.Prev.Y = req.Sim.Hero.Y
 		req.Sim.Hero.X = x
 		req.Sim.Hero.Y = y
 	}
@@ -52,13 +55,40 @@ func (s *Server) GetFeaturesV2(
 func getInput(s *maze.Simulation) []float64 {
 	input := []float64{}
 
-	for _, p := range s.Maze.Maze {
+	v, err := mazemgr.Get(s.Maze, s.Hero.X, s.Hero.Y-1)
+	if err != nil || v == mazemgr.WALL {
+		input = append(input, 1)
+	} else {
+		input = append(input, 0)
+	}
+	v, err = mazemgr.Get(s.Maze, s.Hero.X, s.Hero.Y+1)
+	if err != nil || v == mazemgr.WALL {
+		input = append(input, 1)
+	} else {
+		input = append(input, 0)
+	}
+
+	v, err = mazemgr.Get(s.Maze, s.Hero.X-1, s.Hero.Y)
+	if err != nil || v == mazemgr.WALL {
+		input = append(input, 1)
+	} else {
+		input = append(input, 0)
+	}
+
+	v, err = mazemgr.Get(s.Maze, s.Hero.X+1, s.Hero.Y)
+	if err != nil || v == mazemgr.WALL {
+		input = append(input, 1)
+	} else {
+		input = append(input, 0)
+	}
+
+	/*for _, p := range s.Maze.Maze {
 		if string(p) == mazemgr.WALL {
-			input = append(input, 1)
+			input = append(input, float64(1)/2500)
 		} else {
 			input = append(input, 0)
 		}
-	}
+	}*/
 
 	input = append(
 		input,
@@ -66,6 +96,15 @@ func getInput(s *maze.Simulation) []float64 {
 		float64(s.Hero.Y)/float64(s.Maze.Size.Height),
 		float64(s.Maze.Exit.X)/float64(s.Maze.Size.Width),
 		float64(s.Maze.Exit.Y)/float64(s.Maze.Size.Height),
+		float64(s.Prev.X)/float64(s.Maze.Size.Width),
+		float64(s.Prev.Y)/float64(s.Maze.Size.Height),
+		// Add the crosses for hero, exit and prev now
+		float64(s.Hero.X)/float64(s.Maze.Size.Width)*
+			float64(s.Hero.Y)/float64(s.Maze.Size.Height),
+		float64(s.Maze.Exit.X)/float64(s.Maze.Size.Width)*
+			float64(s.Maze.Exit.Y)/float64(s.Maze.Size.Height),
+		float64(s.Prev.X)/float64(s.Maze.Size.Width)*
+			float64(s.Prev.Y)/float64(s.Maze.Size.Height),
 	)
 	return input
 }
@@ -74,12 +113,16 @@ func dist(hX, hY, eX, eY int32) float64 {
 	return math.Pow(float64(hX-eX), 2) + math.Pow(float64(hY-eY), 2)
 }
 
-func writeFiles(outputPath string, m *maze.Maze, x, y int32, direction string) error {
+func writeFiles(outputPath string, m *maze.Maze, x, y int32, prev_x, prev_y int32, direction string) error {
 	err := writeInput(outputPath, getInput(&maze.Simulation{
 		Maze: m,
 		Hero: &maze.Point{
 			X: x,
 			Y: y,
+		},
+		Prev: &maze.Point{
+			X: prev_x,
+			Y: prev_y,
 		},
 	}))
 
@@ -104,10 +147,15 @@ func writeFiles(outputPath string, m *maze.Maze, x, y int32, direction string) e
 }
 
 var foundRecursion map[int32]bool
+var totalSteps = 0
 
 // recursion - recurse randomly towards the exit
 // if you can move towards
-func recursion(x, y int32, m *maze.Maze, outputPath string, depth int) bool {
+func recursion(x, y int32, prev_x, prev_y int32, m *maze.Maze, outputPath string, depth int) bool {
+
+	if totalSteps > 150000 {
+		return false
+	}
 
 	// we exit before setting foundRecursion because if it
 	// returns here this node has not disqualified itself as
@@ -147,42 +195,74 @@ func recursion(x, y int32, m *maze.Maze, outputPath string, depth int) bool {
 		return true
 	}
 
+	alreadySeen := map[string]bool{}
+
+	a := []string{}
+
+	if m.Exit.X > x {
+		a = append(a, mazemgr.RIGHT)
+		alreadySeen[mazemgr.RIGHT] = true
+	} else if m.Exit.X < x {
+		a = append(a, mazemgr.LEFT)
+		alreadySeen[mazemgr.LEFT] = true
+	}
+
+	if m.Exit.Y < y {
+		a = append(a, mazemgr.UP)
+		alreadySeen[mazemgr.UP] = true
+	} else if m.Exit.Y > y {
+		a = append(a, mazemgr.DOWN)
+		alreadySeen[mazemgr.DOWN] = true
+	}
+
 	// Randomize the array of directions as otherwise we bias the
 	// neural net to always go up more frequently
-	a := []string{
+	directions := []string{
 		mazemgr.UP,
 		mazemgr.DOWN,
 		mazemgr.RIGHT,
 		mazemgr.LEFT,
 	}
 
-	rand.Shuffle(len(a), func(i, j int) { a[i], a[j] = a[j], a[i] })
+	rand.Shuffle(len(directions), func(i, j int) { directions[i], directions[j] = directions[j], directions[i] })
+
+	for _, dir := range directions {
+		if !alreadySeen[dir] {
+			a = append(a, dir)
+		}
+	}
+
+	if len(a) > 4 {
+		panic(fmt.Sprintf("too many %v", a))
+	}
+
 	for _, direction := range a {
 
 		switch direction {
 		case mazemgr.UP:
-			newY = newY - 1
+			newY = y - 1
 		case mazemgr.DOWN:
-			newY = newY + 1
+			newY = y + 1
 		case mazemgr.RIGHT:
-			newX = newX + 1
+			newX = x + 1
 		case mazemgr.LEFT:
-			newX = newX - 1
+			newX = x - 1
 		}
 
 		if valid(newX, newY) {
 			key := newX*100 + newY
 			if !foundRecursion[key] {
 				if newX == m.Exit.X && newY == m.Exit.Y {
-					if err := writeFiles(outputPath, m, newX, newY, direction); err != nil {
+					if err := writeFiles(outputPath, m, x, y, prev_x, prev_y, direction); err != nil {
 						panic(err)
 					}
 					return true
 				} else {
-					if !recursion(newX, newY, m, outputPath, depth+1) {
+					totalSteps += 1
+					if !recursion(newX, newY, x, y, m, outputPath, depth+1) {
 						continue
 					} else {
-						if err := writeFiles(outputPath, m, newX, newY, direction); err != nil {
+						if err := writeFiles(outputPath, m, x, y, prev_x, prev_y, direction); err != nil {
 							panic(err)
 						}
 						return true
@@ -240,10 +320,10 @@ func getOutput(s *maze.Simulation) ([]int32, error) {
 
 func writeInputHeader(fp *os.File) error {
 	header := ""
-	for i := 0; i < 2500; i++ {
+	/*for i := 0; i < 2500; i++ {
 		header += fmt.Sprintf("x%d,", i+1)
-	}
-	header += "hero_x,hero_y,exit_x,exit_y\n"
+	}*/
+	header += "up,down,left,right,hero_x,hero_y,exit_x,exit_y,prev_x,prev_y,cross_hero,cross_exit,cross_prev\n"
 
 	_, err := fp.Write([]byte(header))
 	return errors.Wrap(err, "failed write input header")
@@ -334,9 +414,10 @@ func GenerateTrainingData(path string) error {
 
 			// reset the found counter
 			foundRecursion = nil
-
+			totalSteps = 0
 			// find the path
-			if !recursion(s.Hero.X, s.Hero.Y, s.Maze, path, 0) {
+			// Initially s.Prev will be the same as s.Hero
+			if !recursion(s.Hero.X, s.Hero.Y, s.Prev.X, s.Prev.Y, s.Maze, path, 0) {
 				errCnt++
 			}
 

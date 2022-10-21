@@ -25,6 +25,10 @@ func PlaceHero(s * maze.Simulation) {
 
 	s.Hero.X = X
 	s.Hero.Y = Y
+
+	s.Prev.X = X
+	s.Prev.Y = Y
+
 }
 
 // NewSim - Returns a new Sim with random maze and Hero position
@@ -39,6 +43,8 @@ func NewSim() (*maze.Simulation, error) {
 	}
 
 	sim.Hero = &maze.Point{}
+
+	sim.Prev = &maze.Point{}
 
 	PlaceHero(sim)
 
