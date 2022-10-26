@@ -8,6 +8,8 @@ message Simulation {
 	// prev - the previous point where the hero stood
         // initially it is set to the starting point of the hero
         Point prev = 3;
+        // how many actions run so far
+        int32 step = 4;
 }
 
 message SimulationAction {

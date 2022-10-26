@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/param108/aimaze/mazesim/datav3"
+	"github.com/param108/aimaze/mazesim/datav4"
 	"github.com/param108/aimaze/mazesim/spec/grpc/maze"
 )
 
@@ -15,7 +15,7 @@ func main() {
 
 	switch (cmd) {
 	case "serve":
-		s := &datav3.Server{}
+		s := &datav4.Server{}
 		err := maze.StartServer(9999, s)
 		if err != nil {
 			log.Fatal(err)
@@ -30,7 +30,7 @@ func main() {
 func generateTrainingData(path string) {
 	rand.Seed(time.Now().UnixNano())
 
-	err := datav3.GenerateTrainingData(path)
+	err := datav4.GenerateTrainingData(path)
 	if err != nil {
 		log.Printf("%+v\n", err)
 	}

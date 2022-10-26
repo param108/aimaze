@@ -15,6 +15,7 @@ func PlaceHero(s * maze.Simulation) {
 	X := rand.Int31n(s.Maze.Size.Width)
 	Y := rand.Int31n(s.Maze.Size.Height)
 
+
 	sym, err := Get(s.Maze, X, Y)
 	for err != nil || sym == WALL || (X == s.Maze.Exit.X && Y == s.Maze.Exit.Y) {
 		X = rand.Int31n(s.Maze.Size.Width)

@@ -26,6 +26,13 @@ def printSim(sim):
         print('')
         x = 0
 
+# divide_chunks - divides a list into chunks of size n
+# returns an array of all chunks
+def divide_chunks(l, n):
+    # looping till length l
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
 channel = grpc.insecure_channel('localhost:9999')
 
 stub = SimulatorStub(channel)
@@ -37,15 +44,16 @@ try_num = 1
 while (not (sim.maze.exit.y == sim.hero.y and sim.maze.exit.x == sim.hero.x)) and try_num < max_tries :
     features = stub.GetFeaturesV2(sim)
 
-    actionArr = simulate_ai(features.features)[0]
-    next_action = get_action(sim, actionArr)
-    print(actionArr, next_action.action)
+    actionArrs = list(divide_chunks(simulate_ai(features.features)[0],4))
+    for actionArr in actionArrs:
+        next_action = get_action(sim, actionArr)
+        #print(actionArr, next_action.action)
 
-    printSim(sim)
-    print("moved:", next_action.action,"try:",try_num)
+        printSim(sim)
+        print("moved:", next_action.action,"try:",try_num)
 
-    sim = stub.Simulate(next_action)
-    try_num+=1
+        sim = stub.Simulate(next_action)
+        try_num+=1
 
 if try_num == 150:
     print ("failed, ran out of tries:", try_num)

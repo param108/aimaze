@@ -39,6 +39,7 @@ func (s *Server) Simulate(
 		req.Sim.Hero.X = x
 		req.Sim.Hero.Y = y
 	}
+	req.Sim.Step += 1
 	return req.Sim, nil
 }
 
@@ -89,22 +90,38 @@ func getInput(s *maze.Simulation) []float64 {
 			input = append(input, 0)
 		}
 	}*/
+	dx := float64(s.Hero.X)/float64(s.Maze.Size.Width) - float64(s.Maze.Exit.X)/float64(s.Maze.Size.Width)
+	dy := float64(s.Hero.Y)/float64(s.Maze.Size.Height) - float64(s.Maze.Exit.Y)/float64(s.Maze.Size.Height)
+
+	hx := float64(s.Hero.X)/float64(s.Maze.Size.Width)
+	hy := float64(s.Hero.Y)/float64(s.Maze.Size.Height)
+
+	ex := float64(s.Maze.Exit.X)/float64(s.Maze.Size.Width)
+	ey := float64(s.Maze.Exit.Y)/float64(s.Maze.Size.Height)
+
+	px := float64(s.Prev.X)/float64(s.Maze.Size.Width)
+	py := float64(s.Prev.Y)/float64(s.Maze.Size.Height)
+
+	dh := (float64(s.Hero.X) + float64(s.Hero.Y)*float64(s.Maze.Size.Width))/2500
+	de := (float64(s.Maze.Exit.X) + float64(s.Maze.Exit.Y)*float64(s.Maze.Size.Width))/2500
+	dp := (float64(s.Prev.X) + float64(s.Prev.Y)*float64(s.Maze.Size.Width))/2500
 
 	input = append(
 		input,
-		float64(s.Hero.X)/float64(s.Maze.Size.Width),
-		float64(s.Hero.Y)/float64(s.Maze.Size.Height),
-		float64(s.Maze.Exit.X)/float64(s.Maze.Size.Width),
-		float64(s.Maze.Exit.Y)/float64(s.Maze.Size.Height),
-		float64(s.Prev.X)/float64(s.Maze.Size.Width),
-		float64(s.Prev.Y)/float64(s.Maze.Size.Height),
+		hx,
+		hy,
+		ex,
+		ey,
+		px,
+		py,
 		// Add the crosses for hero, exit and prev now
-		float64(s.Hero.X)/float64(s.Maze.Size.Width)*
-			float64(s.Hero.Y)/float64(s.Maze.Size.Height),
-		float64(s.Maze.Exit.X)/float64(s.Maze.Size.Width)*
-			float64(s.Maze.Exit.Y)/float64(s.Maze.Size.Height),
-		float64(s.Prev.X)/float64(s.Maze.Size.Width)*
-			float64(s.Prev.Y)/float64(s.Maze.Size.Height),
+		dh,
+		de,
+		dp,
+		dx,
+		dy,
+		dx*dy,
+		float64(s.Step)/150,
 	)
 	return input
 }
@@ -113,7 +130,14 @@ func dist(hX, hY, eX, eY int32) float64 {
 	return math.Pow(float64(hX-eX), 2) + math.Pow(float64(hY-eY), 2)
 }
 
-func writeFiles(outputPath string, m *maze.Maze, x, y int32, prev_x, prev_y int32, direction string) error {
+func writeFiles(
+	outputPath string,
+	m *maze.Maze,
+	x, y int32,
+	prev_x, prev_y int32,
+	direction string,
+	depth int32,
+) error {
 	err := writeInput(outputPath, getInput(&maze.Simulation{
 		Maze: m,
 		Hero: &maze.Point{
@@ -124,6 +148,7 @@ func writeFiles(outputPath string, m *maze.Maze, x, y int32, prev_x, prev_y int3
 			X: prev_x,
 			Y: prev_y,
 		},
+		Step: depth,
 	}))
 
 	if err != nil {
@@ -151,7 +176,7 @@ var totalSteps = 0
 
 // recursion - recurse randomly towards the exit
 // if you can move towards
-func recursion(x, y int32, prev_x, prev_y int32, m *maze.Maze, outputPath string, depth int) bool {
+func recursion(x, y int32, prev_x, prev_y int32, m *maze.Maze, outputPath string, depth int32) bool {
 
 	if totalSteps > 150000 {
 		return false
@@ -253,7 +278,7 @@ func recursion(x, y int32, prev_x, prev_y int32, m *maze.Maze, outputPath string
 			key := newX*100 + newY
 			if !foundRecursion[key] {
 				if newX == m.Exit.X && newY == m.Exit.Y {
-					if err := writeFiles(outputPath, m, x, y, prev_x, prev_y, direction); err != nil {
+					if err := writeFiles(outputPath, m, x, y, prev_x, prev_y, direction, depth); err != nil {
 						panic(err)
 					}
 					return true
@@ -262,7 +287,7 @@ func recursion(x, y int32, prev_x, prev_y int32, m *maze.Maze, outputPath string
 					if !recursion(newX, newY, x, y, m, outputPath, depth+1) {
 						continue
 					} else {
-						if err := writeFiles(outputPath, m, x, y, prev_x, prev_y, direction); err != nil {
+						if err := writeFiles(outputPath, m, x, y, prev_x, prev_y, direction, depth); err != nil {
 							panic(err)
 						}
 						return true
@@ -323,7 +348,7 @@ func writeInputHeader(fp *os.File) error {
 	/*for i := 0; i < 2500; i++ {
 		header += fmt.Sprintf("x%d,", i+1)
 	}*/
-	header += "up,down,left,right,hero_x,hero_y,exit_x,exit_y,prev_x,prev_y,cross_hero,cross_exit,cross_prev\n"
+	header += "up,down,left,right,hero_x,hero_y,exit_x,exit_y,prev_x,prev_y,cross_hero,cross_exit,cross_prev,dx,dy,cross_delta,step\n"
 
 	_, err := fp.Write([]byte(header))
 	return errors.Wrap(err, "failed write input header")
