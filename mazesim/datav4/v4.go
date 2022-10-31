@@ -182,21 +182,20 @@ type recurse struct {
 // bfs - tracks bfs progress
 type bfs struct {
 	totalSteps int32
-	seen map[int32]bool
-	work []*bfsWork
-	sim *maze.Simulation
-	mx sync.Mutex
+	seen       map[int32]bool
+	work       []*bfsWork
+	sim        *maze.Simulation
+	mx         sync.Mutex
 }
 
 // newBFS
-func newBFS(sim *maze.Simulation)*bfs {
+func newBFS(sim *maze.Simulation) *bfs {
 	return &bfs{
-		mx: sync.Mutex{},
 		seen: map[int32]bool{
-			sim.Hero.X+ sim.Maze.Size.Width*sim.Hero.Y: true,
+			sim.Hero.X + (sim.Maze.Size.Width*sim.Hero.Y): true,
 		},
-		work: []*bfsWork{{points: []*maze.Point{{X:sim.Hero.X, Y:sim.Hero.Y}}}},
-		sim: sim,
+		work: []*bfsWork{{points: []*maze.Point{{X: sim.Hero.X, Y: sim.Hero.Y}}}},
+		sim:  sim,
 	}
 }
 
@@ -205,14 +204,14 @@ func newBFS(sim *maze.Simulation)*bfs {
 func (b *bfs) checkUpdateSeen(x, y int32) bool {
 	b.mx.Lock()
 	defer b.mx.Unlock()
-	key := x + y*b.sim.Maze.Size.Width
+	key := x + (y*b.sim.Maze.Size.Width)
 	if b.seen[key] {
 		return true
 	}
 
 	b.seen[key] = true
 
-	return b.seen[key]
+	return false
 }
 
 // addWork - add work to the bfs work queue
@@ -233,25 +232,34 @@ type bfsWork struct {
 }
 
 func validPoint(m *maze.Maze, X, Y int32) bool {
-		s, err := mazemgr.Get(m, X, Y)
-		if err != nil {
-			return false
-		}
-		if s == mazemgr.WALL {
-			return false
-		}
-		return true
+	s, err := mazemgr.Get(m, X, Y)
+	if err != nil {
+		return false
+	}
+	if s == mazemgr.WALL {
+		return false
+	}
+	return true
 }
 
 func (b *bfs) run() (*bfsWork, bool) {
 	var wg sync.WaitGroup
-	doneChan := make(chan *bfsWork)
-
+	doneChan := make(chan *bfsWork, 2)
+	success := false
 	for {
 		workList := b.work
+		if len(workList) == 0 {
+			close(doneChan)
+			break
+		} else {
+			if debugRun {
+				fmt.Println("work:", len(workList))
+			}
+		}
+
 		b.work = []*bfsWork{}
-		for _, w := range(workList) {
-			b.totalSteps +=1
+		for i:=0; i < len(workList); i++ {
+			b.totalSteps += 1
 			wg.Add(1)
 
 			go func(work *bfsWork) {
@@ -259,14 +267,23 @@ func (b *bfs) run() (*bfsWork, bool) {
 				ret, done := b.doWork(work)
 				if done {
 					doneChan <- ret
+					success = true
 				}
-			}(w)
+			}(workList[i])
 
 		}
 
 		wg.Wait()
 
-		if b.totalSteps > 15000 {
+		if b.totalSteps > 150000 {
+			if debugRun {
+				fmt.Println("Too many steps")
+			}
+			close(doneChan)
+			break
+		}
+
+		if success {
 			close(doneChan)
 			break
 		}
@@ -280,8 +297,14 @@ func (b *bfs) run() (*bfsWork, bool) {
 	return w, false
 }
 
+var debugRun = false
+
 func (b *bfs) doWork(w *bfsWork) (*bfsWork, bool) {
-	if len(w.points) > 150 {
+
+	if len(w.points) > 500 {
+		if debugRun {
+			fmt.Println("Too many points", len(w.points))
+		}
 		return nil, false
 	}
 
@@ -294,16 +317,18 @@ func (b *bfs) doWork(w *bfsWork) (*bfsWork, bool) {
 		mazemgr.LEFT,
 	}
 
-	rand.Shuffle(len(directions), func(i, j int) { directions[i], directions[j] = directions[j], directions[i] })
+	//rand.Shuffle(len(directions), func(i, j int) { directions[i], directions[j] = directions[j], directions[i] })
 
 	var (
-		newY, newX, x, y int32
+		x, y int32
 	)
 
 	x = w.points[len(w.points)-1].X
 	y = w.points[len(w.points)-1].Y
 
 	for _, direction := range directions {
+		newX := x
+		newY := y
 
 		switch direction {
 		case mazemgr.UP:
@@ -320,29 +345,49 @@ func (b *bfs) doWork(w *bfsWork) (*bfsWork, bool) {
 			m := b.sim.Maze
 
 			if !b.checkUpdateSeen(newX, newY) {
-				newDirections := w.directions
-				newPoints := w.points
+				newDirections := make([]string, len(w.directions))
+				newPoints := make([]*maze.Point, len(w.points))
+
+				copy(newDirections, w.directions)
+				copy(newPoints, w.points)
 
 				newDirections = append(newDirections, direction)
-				newPoints = append(newPoints, &maze.Point{X: newX, Y:newY})
 
+				p := &maze.Point{X: newX, Y: newY}
+
+				newPoints = append(newPoints, p)
+				p = nil
 				if newX == m.Exit.X && newY == m.Exit.Y {
 					// Found the exit return the last direction turned.
-					w.directions = newDirections
-					w.points= newPoints
-					return w, true
+					return &bfsWork{
+						directions: newDirections,
+						points:     newPoints,
+					}, true
 				} else {
+					if debugRun {
+						fmt.Println("adding", newX, newY)
+					}
+
 					b.addWork(&bfsWork{
 						directions: newDirections,
-						points: newPoints,
+						points:     newPoints,
 					})
 				}
+			} else {
+				if debugRun {
+					fmt.Println("seen", newX, newY)
+				}
+			}
+		} else {
+			if debugRun {
+					fmt.Println("invalid", newX, newY)
 			}
 		}
 	}
 
 	return nil, false
 }
+
 // recursion - recurse randomly towards the exit
 // if you can move towards
 func (r *recurse) recursion(x, y int32, prev_x, prev_y int32, m *maze.Maze, outputPath string, depth int32) ([]*maze.Point, bool) {
@@ -630,11 +675,109 @@ func convertPointsToInts(s *maze.Simulation, points []*maze.Point) []int32 {
 var writemx sync.Mutex
 
 type Data struct {
-	in []byte
+	in  []byte
 	out []byte
 }
 
 func GenerateTrainingData(pathString string) error {
+	return GenerateTrainingDataBFS(pathString)
+}
+
+func GenerateTrainingDataBFS(pathString string) error {
+	cnt := atomic.Int32{}
+	errCnt := atomic.Int32{}
+
+	data := &Data{}
+	wgWriter := sync.WaitGroup{}
+
+	dataInCh := make(chan *Data, 30)
+	wgWriter.Add(1)
+	go func(path string) {
+		defer wgWriter.Done()
+		for {
+			select {
+			case d := <-dataInCh:
+				if d == nil {
+					return
+				}
+				writemx.Lock()
+				globalInputFp.Write(d.in)
+				globalOutputFp.Write(d.out)
+				writemx.Unlock()
+			}
+		}
+	}(pathString)
+
+	OuterSize := 30000
+	InnerSize := 10
+	for i := 0; i < OuterSize; i++ {
+
+		s, err := mazemgr.NewSim()
+		if err != nil {
+			panic(err)
+		}
+
+		for j := 0; j < InnerSize; j++ {
+			cnt.Add(1)
+			if !debugRun {
+				cntVal := cnt.Load()
+				if (cntVal+1)%10 == 0 {
+					fmt.Printf("\r%d/%d err: %d", cntVal+1, OuterSize*InnerSize, errCnt.Load())
+				}
+			}
+
+			mazemgr.PlaceHero(s)
+			d := newBFS(s)
+			if debugRun {
+				fmt.Println("New BFS")
+			}
+			w, done := d.run()
+			if done {
+
+				inp, err := writeInput(pathString, getInput(s))
+				if err != nil {
+					panic(err)
+				}
+				data.in = append(data.in, inp...)
+				out, err := writeOutput(pathString, convertPointsToInts(s, w.points))
+				if err != nil {
+					panic(err)
+				}
+				data.out = append(data.out, out...)
+
+				if len(data.in) > 1000000 {
+					dataInCh <- data
+					data = &Data{}
+				}
+
+			} else {
+				errCnt.Add(1)
+				if debugRun {
+					mazemgr.PrintSimSeen(s, d.seen)
+					return nil
+				}
+				return nil
+			}
+		}
+	}
+
+	dataInCh <- data
+
+	close(dataInCh)
+	wgWriter.Wait()
+
+	if globalOutputFp != nil {
+		globalOutputFp.Close()
+	}
+
+	if globalInputFp != nil {
+		globalInputFp.Close()
+	}
+
+	return nil
+}
+
+func GenerateTrainingDataDepthFirst(pathString string) error {
 	cnt := atomic.Int32{}
 	errCnt := atomic.Int32{}
 	wg := sync.WaitGroup{}

@@ -22,7 +22,7 @@ func init() {
 func NewMaze() *maze.Maze {
 	m := &maze.Maze{}
 	m.Size = &maze.Size{
-		Width: 50,
+		Width:  50,
 		Height: 50,
 	}
 	m.Exit = &maze.Point{}
@@ -138,12 +138,12 @@ func IsCorner(m *maze.Maze, x, y int32) bool {
 // createBorder - creates the border of the maze
 // leaves one point empty and populates the exit.
 func createBorder(m *maze.Maze) {
-	exitIdx := rand.Intn(int(m.Size.Height*2 + m.Size.Width*2) - 4)
-	for (exitIdx == 0 || // first corner
-		exitIdx == int(m.Size.Width - 1) || // second corner
-		exitIdx == int(m.Size.Width + 2*m.Size.Height) - 2 - 1 || // third corner
-		exitIdx == int(m.Size.Height*2 + m.Size.Width*2) - 4 - 1) {
-		exitIdx = rand.Intn(int(m.Size.Height*2 + m.Size.Width*2) - 4)
+	exitIdx := rand.Intn(int(m.Size.Height*2+m.Size.Width*2) - 4)
+	for exitIdx == 0 || // first corner
+		exitIdx == int(m.Size.Width-1) || // second corner
+		exitIdx == int(m.Size.Width+2*(m.Size.Height-2)) || // third corner
+		exitIdx == int((m.Size.Height-2)*2+m.Size.Width*2)-1 {
+		exitIdx = rand.Intn(int(m.Size.Height*2+m.Size.Width*2) - 4)
 	}
 
 	exitFound := false
@@ -160,7 +160,7 @@ func createBorder(m *maze.Maze) {
 						m.Exit.Y = y
 						Set(m, x, y, EMPTY)
 					} else {
-						exitIdx --
+						exitIdx--
 					}
 				}
 

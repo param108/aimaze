@@ -104,6 +104,45 @@ func PrintSim(s *maze.Simulation) {
 	}
 }
 
+// Print - prints the sim board
+func PrintSimSeen(s *maze.Simulation,m map[int32]bool ) {
+	for y := int32(0); y < s.Maze.Size.Height; y++ {
+		for x := int32(0); x < s.Maze.Size.Width; x++ {
+			if x == 0 {
+				fmt.Printf("%02d ",y)
+			}
+			if x == s.Maze.Exit.X && y == s.Maze.Exit.Y {
+				fmt.Print("E")
+				continue
+			}
+
+			if x == s.Hero.X && y == s.Hero.Y {
+				fmt.Print("H")
+				continue
+			}
+
+			d, _ := Get(s.Maze, x, y)
+			if len(d) == 0 {
+				fmt.Print(" ")
+			} else {
+				if d == " " {
+					if m[x+y*s.Maze.Size.Width] {
+						fmt.Print("*")
+					} else {
+						fmt.Print(d)
+					}
+				} else {
+					fmt.Print(d)
+				}
+			}
+		}
+		fmt.Println("")
+	}
+	fmt.Println("   00000000001111111111222222222233333333334444444444")
+	fmt.Println("   01234567890123456789012345678901234567890123456789")
+
+}
+
 const (
 	UP    = "up"
 	DOWN  = "down"
