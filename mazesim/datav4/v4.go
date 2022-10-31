@@ -179,6 +179,170 @@ type recurse struct {
 	totalSteps     int32
 }
 
+// bfs - tracks bfs progress
+type bfs struct {
+	totalSteps int32
+	seen map[int32]bool
+	work []*bfsWork
+	sim *maze.Simulation
+	mx sync.Mutex
+}
+
+// newBFS
+func newBFS(sim *maze.Simulation)*bfs {
+	return &bfs{
+		mx: sync.Mutex{},
+		seen: map[int32]bool{
+			sim.Hero.X+ sim.Maze.Size.Width*sim.Hero.Y: true,
+		},
+		work: []*bfsWork{{points: []*maze.Point{{X:sim.Hero.X, Y:sim.Hero.Y}}}},
+		sim: sim,
+	}
+}
+
+// checkUpdateSeen - return true if point is already seen.
+// if not seen set seen to true and return false
+func (b *bfs) checkUpdateSeen(x, y int32) bool {
+	b.mx.Lock()
+	defer b.mx.Unlock()
+	key := x + y*b.sim.Maze.Size.Width
+	if b.seen[key] {
+		return true
+	}
+
+	b.seen[key] = true
+
+	return b.seen[key]
+}
+
+// addWork - add work to the bfs work queue
+func (b *bfs) addWork(w *bfsWork) {
+	b.mx.Lock()
+	defer b.mx.Unlock()
+	b.work = append(b.work, w)
+}
+
+// bfsWork - the work that is being tried
+type bfsWork struct {
+	// points - list of points traversed so far
+	// current point is at the end
+	points []*maze.Point
+
+	// direction - direction to try now
+	directions []string
+}
+
+func validPoint(m *maze.Maze, X, Y int32) bool {
+		s, err := mazemgr.Get(m, X, Y)
+		if err != nil {
+			return false
+		}
+		if s == mazemgr.WALL {
+			return false
+		}
+		return true
+}
+
+func (b *bfs) run() (*bfsWork, bool) {
+	var wg sync.WaitGroup
+	doneChan := make(chan *bfsWork)
+
+	for {
+		workList := b.work
+		b.work = []*bfsWork{}
+		for _, w := range(workList) {
+			b.totalSteps +=1
+			wg.Add(1)
+
+			go func(work *bfsWork) {
+				defer wg.Done()
+				ret, done := b.doWork(work)
+				if done {
+					doneChan <- ret
+				}
+			}(w)
+
+		}
+
+		wg.Wait()
+
+		if b.totalSteps > 15000 {
+			close(doneChan)
+			break
+		}
+	}
+
+	w := <-doneChan
+	if w != nil {
+		return w, true
+	}
+
+	return w, false
+}
+
+func (b *bfs) doWork(w *bfsWork) (*bfsWork, bool) {
+	if len(w.points) > 150 {
+		return nil, false
+	}
+
+	// Randomize the array of directions as otherwise we bias the
+	// neural net to always go up more frequently
+	directions := []string{
+		mazemgr.UP,
+		mazemgr.DOWN,
+		mazemgr.RIGHT,
+		mazemgr.LEFT,
+	}
+
+	rand.Shuffle(len(directions), func(i, j int) { directions[i], directions[j] = directions[j], directions[i] })
+
+	var (
+		newY, newX, x, y int32
+	)
+
+	x = w.points[len(w.points)-1].X
+	y = w.points[len(w.points)-1].Y
+
+	for _, direction := range directions {
+
+		switch direction {
+		case mazemgr.UP:
+			newY = y - 1
+		case mazemgr.DOWN:
+			newY = y + 1
+		case mazemgr.RIGHT:
+			newX = x + 1
+		case mazemgr.LEFT:
+			newX = x - 1
+		}
+
+		if validPoint(b.sim.Maze, newX, newY) {
+			m := b.sim.Maze
+
+			if !b.checkUpdateSeen(newX, newY) {
+				newDirections := w.directions
+				newPoints := w.points
+
+				newDirections = append(newDirections, direction)
+				newPoints = append(newPoints, &maze.Point{X: newX, Y:newY})
+
+				if newX == m.Exit.X && newY == m.Exit.Y {
+					// Found the exit return the last direction turned.
+					w.directions = newDirections
+					w.points= newPoints
+					return w, true
+				} else {
+					b.addWork(&bfsWork{
+						directions: newDirections,
+						points: newPoints,
+					})
+				}
+			}
+		}
+	}
+
+	return nil, false
+}
 // recursion - recurse randomly towards the exit
 // if you can move towards
 func (r *recurse) recursion(x, y int32, prev_x, prev_y int32, m *maze.Maze, outputPath string, depth int32) ([]*maze.Point, bool) {
@@ -213,17 +377,6 @@ func (r *recurse) recursion(x, y int32, prev_x, prev_y int32, m *maze.Maze, outp
 
 	newX := x
 	newY := y
-
-	valid := func(X, Y int32) bool {
-		s, err := mazemgr.Get(m, X, Y)
-		if err != nil {
-			return false
-		}
-		if s == mazemgr.WALL {
-			return false
-		}
-		return true
-	}
 
 	alreadySeen := map[string]bool{}
 
@@ -279,7 +432,7 @@ func (r *recurse) recursion(x, y int32, prev_x, prev_y int32, m *maze.Maze, outp
 			newX = x - 1
 		}
 
-		if valid(newX, newY) {
+		if validPoint(m, newX, newY) {
 			key := newX*100 + newY
 			if !r.foundRecursion[key] {
 				if newX == m.Exit.X && newY == m.Exit.Y {
@@ -466,20 +619,9 @@ func convertToInts(directions []string) []int32 {
 }
 
 func convertPointsToInts(s *maze.Simulation, points []*maze.Point) []int32 {
-	ret := []int32{}
-	found := map[int]bool{}
+	ret := make([]int32, 2500)
 	for _, pt := range points {
-		found[int(pt.X+s.Maze.Size.Width*pt.Y)] = true
-	}
-
-	for y := int32(0); y < s.Maze.Size.Height; y++ {
-		for x := int32(0); x < s.Maze.Size.Width; x++ {
-			if found[int(x+s.Maze.Size.Width*y)] {
-				ret = append(ret, 1)
-			} else {
-				ret = append(ret, 0)
-			}
-		}
+		ret[int(pt.X+s.Maze.Size.Width*pt.Y)] = 1
 	}
 
 	return ret
@@ -548,7 +690,7 @@ func GenerateTrainingData(pathString string) error {
 						}
 						data.out = append(data.out, out...)
 
-						if len(data.out) > 10000 {
+						if len(data.in) > 1000000 {
 							dataInCh <- data
 							data = &Data{}
 						}
